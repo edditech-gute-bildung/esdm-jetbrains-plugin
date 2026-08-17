@@ -106,7 +106,21 @@ private class EsdmDeclarationTarget(private val nameScalar: YAMLScalar) : Docume
             .locationText(nameScalar.containingFile.name)
             .presentation()
 
-    override fun computeDocumentation(): DocumentationResult? {
+    override fun computeDocumentation(): DocumentationResult? =
+        EsdmDeclarationHtml.of(nameScalar)?.let { DocumentationResult.documentation(it) }
+}
+
+/**
+ * Renders a declaration as documentation HTML.
+ *
+ * Shared because ESDM documentation has to be contributed to two chains — the
+ * current `DocumentationTarget` API and the legacy `lang.documentationProvider`
+ * the YAML plugin's schema documentation lives in — and both must say the same
+ * thing.
+ */
+internal object EsdmDeclarationHtml {
+
+    fun of(nameScalar: YAMLScalar): String? {
         val mapping = PsiTreeUtil.getParentOfType(nameScalar, YAMLDocument::class.java)
             ?.topLevelValue as? YAMLMapping
             ?: return null
@@ -148,7 +162,7 @@ private class EsdmDeclarationTarget(private val nameScalar: YAMLScalar) : Docume
             }
         }
 
-        return DocumentationResult.documentation(html)
+        return html
     }
 
     private fun scopeOf(mapping: YAMLMapping): String? {

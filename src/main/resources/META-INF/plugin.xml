@@ -69,6 +69,15 @@
             order="first"
             implementation="net.edditech.esdm.index.EsdmDocumentationTargetProvider"/>
 
+        <!-- The hover popup goes through the LEGACY chain, where the YAML
+             plugin's YamlJsonSchemaDocumentationProvider lives. A new-style
+             provider cannot outrank it however it is ordered, so ESDM
+             documentation has to join this chain and sit ahead of it. -->
+        <lang.documentationProvider
+            language="yaml"
+            order="first, before YamlJsonSchemaDocumentationProvider"
+            implementationClass="net.edditech.esdm.index.EsdmLegacyDocumentationProvider"/>
+
         <projectConfigurable
             parentId="tools"
             id="net.edditech.esdm.settings"

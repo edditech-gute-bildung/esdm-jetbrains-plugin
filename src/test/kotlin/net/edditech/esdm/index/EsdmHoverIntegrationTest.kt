@@ -83,6 +83,58 @@ class EsdmHoverIntegrationTest : BasePlatformTestCase() {
         assertTrue("expected some documentation for the field: $html", html.isNotEmpty())
     }
 
+    /**
+     * The chain the hover popup actually uses.
+     *
+     * Everything above goes through the current `DocumentationTarget` API, and
+     * all of it passed while the IDE still showed `boundedContext` and nothing
+     * else. The YAML plugin contributes schema documentation as a legacy
+     * `lang.documentationProvider`, and that is a separate chain — so this
+     * composes the legacy providers for YAML exactly as the platform does and
+     * asks who answers.
+     */
+    private fun legacyDoc(relativePath: String, snippet: String, atValue: Boolean): String? {
+        val root = myFixture.copyDirectoryToProject("library", "library")
+        myFixture.openFileInEditor(root.findFileByRelativePath(relativePath)!!)
+
+        val offset = myFixture.editor.document.text.indexOf(snippet)
+        assertTrue("snippet not found: $snippet", offset >= 0)
+        val caret = if (atValue) offset + snippet.length - 1 else offset
+        myFixture.editor.caretModel.moveToOffset(caret)
+
+        val original = myFixture.file.findElementAt(caret)!!
+        val target = myFixture.file.findReferenceAt(caret)?.resolve() ?: original
+
+        val chain = com.intellij.lang.LanguageDocumentation.INSTANCE
+            .forLanguage(org.jetbrains.yaml.YAMLLanguage.INSTANCE)
+        return chain.generateDoc(target, original)
+    }
+
+    fun testLegacyChainAnswersForAReferenceValue() {
+        val html = legacyDoc("cataloging/book.esdm.yaml", "boundedContext: cataloging", atValue = true)
+
+        assertNotNull("nothing answered in the legacy chain", html)
+        assertTrue("expected our documentation, got: $html", html!!.contains("bounded-context"))
+        assertTrue("expected the target's scope, got: $html", html.contains("domain: library"))
+    }
+
+    fun testLegacyChainAnswersForAReferenceKey() {
+        val html = legacyDoc("cataloging/book.esdm.yaml", "boundedContext: cataloging", atValue = false)
+
+        assertNotNull("nothing answered in the legacy chain", html)
+        assertTrue("expected our documentation, got: $html", html!!.contains("bounded-context"))
+    }
+
+    /** Non-references must still fall through to the schema's own description. */
+    fun testLegacyChainDefersForNonReferences() {
+        val html = legacyDoc("cataloging/book.esdm.yaml", "kind: aggregate", atValue = true)
+
+        assertFalse(
+            "we should not be answering for a schema enum, got: $html",
+            html.orEmpty().contains("<b>aggregate</b>"),
+        )
+    }
+
     fun testHoverOnABareNameDoesNotShowSchemaInternals() {
         val html = hoverAt("cataloging/book.esdm.yaml", "- acquired")
 
