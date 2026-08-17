@@ -51,6 +51,16 @@
             language="yaml"
             implementationClass="net.edditech.esdm.lint.EsdmLintAnnotator"/>
 
+        <!-- Resolves a reference to its declaration without reading the model. -->
+        <fileBasedIndex implementation="net.edditech.esdm.index.EsdmDeclarationIndex"/>
+
+        <psi.referenceContributor
+            language="yaml"
+            implementation="net.edditech.esdm.index.EsdmReferenceContributor"/>
+
+        <platform.backend.documentation.psiTargetProvider
+            implementation="net.edditech.esdm.index.EsdmDocumentationProvider"/>
+
         <projectConfigurable
             parentId="tools"
             id="net.edditech.esdm.settings"

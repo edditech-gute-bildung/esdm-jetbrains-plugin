@@ -1,0 +1,172 @@
+apiVersion: schema.esdm.io/core/v1
+kind: bounded-context
+name: reservations
+description: >-
+  Holding a copy for a borrower before they collect it. Exists in the fixture to
+  cover the selector-based consistency unit and its free-standing events, which
+  the aggregate-only contexts cannot exercise.
+scope:
+  domain: library
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: dynamic-consistency-boundary
+name: reservation-limit
+description: >-
+  "A borrower may hold at most three active reservations" is a decision over two
+  keys — the borrower and the title — and over events that belong to no single
+  container. A selector-based unit, spanned per decision, rather than an
+  aggregate.
+scope:
+  domain: library
+  boundedContext: reservations
+identifiedBy:
+  - name: borrower
+    source: command-payload
+    field: borrower
+consults:
+  - boundedContext: reservations
+    event: reserved
+    criteria: Reservations already placed by this borrower and not yet released.
+  - boundedContext: reservations
+    event: released
+    criteria: Releases, which take a reservation back out of the count.
+invariants:
+  - name: at-most-three-active-reservations
+    rule: >-
+      A borrower with three reservations that have not been released cannot
+      place a fourth. The fourth request is rejected.
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: reserve
+description: >-
+  Bound to the boundary rather than to an aggregate, so its events are
+  free-standing within the bounded context.
+scope:
+  domain: library
+  boundedContext: reservations
+  dynamicConsistencyBoundary: reservation-limit
+data:
+  type: object
+  properties:
+    borrower: { type: string }
+    isbn: { type: string }
+  required: [borrower, isbn]
+publishes:
+  - reserved
+actors:
+  - borrower
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: reserved
+description: >-
+  Free-standing: its scope names a bounded context and no aggregate, because a
+  boundary reads events rather than owning them. A reference to this event is
+  therefore a `{boundedContext, event}` pair, never a triple.
+scope:
+  domain: library
+  boundedContext: reservations
+data:
+  type: object
+  properties:
+    borrower: { type: string }
+    isbn: { type: string }
+    reserved-on: { type: string, format: date }
+  required: [borrower, isbn, reserved-on]
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: release
+scope:
+  domain: library
+  boundedContext: reservations
+  dynamicConsistencyBoundary: reservation-limit
+data:
+  type: object
+  properties:
+    borrower: { type: string }
+    isbn: { type: string }
+  required: [borrower, isbn]
+publishes:
+  - released
+actors:
+  - borrower
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: released
+scope:
+  domain: library
+  boundedContext: reservations
+data:
+  type: object
+  properties:
+    borrower: { type: string }
+    isbn: { type: string }
+    released-on: { type: string, format: date }
+  required: [borrower, isbn, released-on]
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: active-reservations
+scope:
+  domain: library
+  boundedContext: reservations
+paradigm: tabular
+schema:
+  type: array
+  items:
+    type: object
+    properties:
+      borrower: { type: string }
+      isbn: { type: string }
+    required: [borrower, isbn]
+projections:
+  - boundedContext: reservations
+    event: reserved
+    rule: Append a row for this borrower and title.
+  - boundedContext: reservations
+    event: released
+    rule: Remove the row for this borrower and title.
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: query
+name: list-reservations
+scope:
+  domain: library
+  boundedContext: reservations
+readModel: active-reservations
+result:
+  type: array
+  items:
+    type: object
+    properties:
+      borrower: { type: string }
+      isbn: { type: string }
+    required: [borrower, isbn]
+actors:
+  - borrower
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: actor
+name: borrower
+description: >-
+  Reservations has its own borrower, distinct from lending's. Actors are
+  bounded-context scoped precisely so the same word can mean different things
+  either side of a boundary.
+scope:
+  domain: library
+  boundedContext: reservations
+type: human
+responsibilities:
+  - Reserve a title that is currently out
+  - Release a reservation that is no longer wanted
