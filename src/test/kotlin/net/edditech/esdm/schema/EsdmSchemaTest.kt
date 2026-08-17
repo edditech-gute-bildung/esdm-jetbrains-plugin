@@ -90,61 +90,21 @@ class EsdmSchemaTest : BasePlatformTestCase() {
 
     // ---------------------------------------------------------------- completion
 
-    /**
-     * CANARY. Property completion ignores both discriminators and offers the
-     * union of every kind's properties: asking inside an `aggregate` yields
-     * `capabilities`, `scenarios`, `readModel` and 47 others. Unusable as-is,
-     * which is why [net.edditech.esdm.completion] exists.
-     */
-    fun testPropertyCompletionIsUndiscriminated() {
-        myFixture.configureByText(
-            "book.esdm.yaml",
-            """
-            apiVersion: schema.esdm.io/core/v1
-            kind: aggregate
-            name: book
-            <caret>
-            """.trimIndent(),
-        )
-        myFixture.completeBasic()
-        val offered = myFixture.lookupElementStrings.orEmpty().toSet()
-
-        // Asserted as a set relation rather than an exact list, so the test
-        // survives cosmetic changes in ordering or in unrelated kinds and only
-        // flips when the engine genuinely starts discriminating.
-        val foreign = setOf("capabilities", "readModel", "scenarios", "sentences")
-        assertTrue(
-            "completion should still be leaking foreign properties; leaked=${offered intersect foreign}",
-            (offered intersect foreign).isNotEmpty(),
-        )
-    }
-
-    /**
-     * CANARY, and the worst of it: enum completion does not merely over-offer,
-     * it picks the *wrong* branch. A `context-mapping`'s `type` should offer the
-     * eight DDD mapping patterns; the engine offers the `actor` enum instead.
-     * Silently wrong suggestions are worse than none, so our contributor has to
-     * replace these rather than merely add to them.
-     */
-    fun testEnumCompletionResolvesToTheWrongBranch() {
-        myFixture.configureByText(
-            "mapping.esdm.yaml",
-            """
-            apiVersion: schema.esdm.io/core/v1
-            kind: context-mapping
-            name: a-to-b
-            type: <caret>
-            """.trimIndent(),
-        )
-        myFixture.completeBasic()
-        val offered = myFixture.lookupElementStrings.orEmpty().toSet()
-
-        // The invariant we actually depend on: the correct values are absent.
-        // Stated this way rather than pinning the exact wrong list, so the test
-        // reports "the engine got fixed" instead of "the wrong answer changed".
-        assertFalse(
-            "context-mapping patterns should still be missing; offered=$offered",
-            offered.containsAll(listOf("published-language", "customer-supplier")),
-        )
-    }
+    // The platform's completion behaviour used to be asserted here as a canary,
+    // on the theory that it would fail once JetBrains fixed the engine. That
+    // stopped being observable the moment EsdmCompletionContributor started
+    // calling stopHere() on `*.esdm.yaml` — the platform never gets to answer,
+    // so the canary could only ever measure our own contributor.
+    //
+    // The behaviour it recorded, measured on platform 252:
+    //   - properties inside `kind: aggregate` → all 50 properties from every
+    //     kind and both extension schemas
+    //   - `type:` inside `kind: context-mapping` → `[human, system]`, the actor
+    //     enum, i.e. the wrong branch rather than merely too many branches
+    //
+    // To re-measure against a newer platform, comment out the
+    // completion.contributor registration in plugin.xml and run
+    // EsdmCompletionTest: if it still passes, the engine has been fixed and the
+    // contributor can be retired. Guarding the behaviour we ship is
+    // EsdmCompletionTest's job, not this class's.
 }

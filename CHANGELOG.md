@@ -15,4 +15,9 @@ on JetBrains Marketplace, so write it for users, not for contributors.
   corpus and as a sample project to open in the sandbox IDE.
 - Schema validation for `*.esdm.yaml`. The ESDM schemas are bundled and applied
   automatically, so the per-document `# yaml-language-server: $schema=...`
-  modeline is no longer needed. Completion is not yet useful — see the README.
+  modeline is no longer needed.
+- Completion that knows what kind of document you are writing: inside a
+  `kind: aggregate` it offers `identifiedBy` and `state` rather than every
+  property of every kind, and a `context-mapping`'s `type` offers the eight DDD
+  mapping patterns. Required fields are listed first. Once a `type` is chosen,
+  only that variant's fields are offered.

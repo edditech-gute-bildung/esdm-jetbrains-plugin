@@ -35,4 +35,14 @@
     <extensions defaultExtensionNs="JavaScript.JsonSchema">
         <ProviderFactory implementation="net.edditech.esdm.schema.EsdmSchemaProviderFactory"/>
     </extensions>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- order="first" matters: this contributor calls stopHere() to suppress
+             the platform's schema completion, which is wrong rather than merely
+             incomplete inside ESDM documents. -->
+        <completion.contributor
+            language="yaml"
+            order="first"
+            implementationClass="net.edditech.esdm.completion.EsdmCompletionContributor"/>
+    </extensions>
 </idea-plugin>
