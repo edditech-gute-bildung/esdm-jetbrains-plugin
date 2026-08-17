@@ -53,3 +53,12 @@ replay_pid*
 # untracked — this is an open-source repository. The models the tests and demos
 # run against are synthetic and live in src/test/testData/.
 /example/
+
+# Plugin signing material. These belong in GitHub secrets, never in the
+# repository: the private key is what proves a release came from us, and a
+# public repo makes any leak permanent. Generate them outside the working tree
+# if you can; this is the second line of defence, not the first.
+*.pem
+*.crt
+*.p12
+*.jks
