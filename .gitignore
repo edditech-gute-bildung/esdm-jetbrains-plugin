@@ -54,6 +54,11 @@ replay_pid*
 # run against are synthetic and live in src/test/testData/.
 /example/
 
+# macOS Finder metadata. Harmless but noisy, and one of them sat in
+# src/main/resources/, where it would have been copied straight into the plugin
+# jar had the build not been rerun.
+.DS_Store
+
 # Plugin signing material. These belong in GitHub secrets, never in the
 # repository: the private key is what proves a release came from us, and a
 # public repo makes any leak permanent. Generate them outside the working tree
