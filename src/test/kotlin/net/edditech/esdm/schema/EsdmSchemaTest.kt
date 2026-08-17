@@ -16,6 +16,12 @@ import org.jetbrains.yaml.schema.YamlJsonSchemaHighlightingInspection
  * The tests below that assert broken behaviour are canaries, not endorsements:
  * if a platform release fixes the engine they will fail, and that is the signal
  * that our own completion contributor can be retired.
+ *
+ * Environment note: the tests that read the bundled schema fail with
+ * `VfsRootAccessNotAllowedError` if the project lives under `/tmp` on macOS —
+ * the test framework canonicalises to `/private/tmp` and the sandbox then falls
+ * outside the allowed VFS roots. That is the checkout location, not the code;
+ * building from a normal path passes.
  */
 class EsdmSchemaTest : BasePlatformTestCase() {
 
