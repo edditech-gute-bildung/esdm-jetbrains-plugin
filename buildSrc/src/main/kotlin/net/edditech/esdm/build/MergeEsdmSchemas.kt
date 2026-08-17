@@ -56,7 +56,7 @@ abstract class MergeEsdmSchemas : DefaultTask() {
     @TaskAction
     fun merge() {
         val defs = JsonObject()
-        val branches = JsonArray()
+        val branches = linkedMapOf<String, JsonObject>()
         var lifted = 0
 
         for ((slug, relativePath) in SOURCES) {
@@ -78,7 +78,47 @@ abstract class MergeEsdmSchemas : DefaultTask() {
             root.remove("\$schema")
             root.keySet().filter { it.startsWith("x-esdm-") }.forEach { root.remove(it) }
 
-            branches.add(rewriteRefs(root, slug))
+            val branch = rewriteRefs(root, slug) as JsonObject
+            val apiVersion = branch.getAsJsonObject("properties")
+                ?.getAsJsonObject("apiVersion")
+                ?.get("const")?.asString
+                ?: error("Schema has no apiVersion const to dispatch on: $file")
+            branches[apiVersion] = branch
+        }
+
+        // Dispatch with `if`/`then` on apiVersion rather than `oneOf`.
+        //
+        // `oneOf` was the first choice, because IntelliJ discriminates its
+        // branches better than it does conditionals. Measured, it was wrong
+        // twice over: completion did not discriminate at all (which is why the
+        // plugin ships its own contributor, so the schema no longer has to be
+        // good at completion), and validation reported "Validates to more than
+        // one variant" on every *complete* context-mapping while leaving
+        // incomplete ones alone — a false positive on correct models, which is
+        // the worst kind.
+        //
+        // `if`/`then` says exactly what is meant: this apiVersion implies this
+        // shape. Nothing is claimed about mutual exclusivity, so there is no
+        // "more than one variant" to get wrong.
+        val dispatch = JsonArray()
+        branches.forEach { (apiVersion, branch) ->
+            dispatch.add(
+                JsonObject().apply {
+                    add(
+                        "if",
+                        JsonObject().apply {
+                            add(
+                                "properties",
+                                JsonObject().apply {
+                                    add("apiVersion", JsonObject().apply { addProperty("const", apiVersion) })
+                                },
+                            )
+                            add("required", JsonArray().apply { add("apiVersion") })
+                        },
+                    )
+                    add("then", branch)
+                },
+            )
         }
 
         val merged = JsonObject().apply {
@@ -87,8 +127,21 @@ abstract class MergeEsdmSchemas : DefaultTask() {
             addProperty("title", "ESDM")
             addProperty(
                 "description",
-                "Merged ESDM schema: core plus extensions, discriminated on apiVersion. " +
+                "Merged ESDM schema: core plus extensions, dispatched on apiVersion. " +
                     "Generated from the upstream schemas — edit those, not this file.",
+            )
+            // Keeps a typo in apiVersion itself an error; without it an unknown
+            // value would simply match no branch and be silently unvalidated.
+            add(
+                "properties",
+                JsonObject().apply {
+                    add(
+                        "apiVersion",
+                        JsonObject().apply {
+                            add("enum", JsonArray().apply { branches.keys.forEach { add(it) } })
+                        },
+                    )
+                },
             )
             // The sources are MIT-licensed and their notice must not be removed;
             // this file is a derived work, so it carries the notice too.
@@ -98,7 +151,7 @@ abstract class MergeEsdmSchemas : DefaultTask() {
                     "MIT licensed. Full terms: https://www.esdm.io/introduction/license/",
             )
             add("\$defs", defs)
-            add("oneOf", branches)
+            add("allOf", dispatch)
         }
 
         val broken = brokenRefs(merged)

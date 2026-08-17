@@ -154,18 +154,44 @@ class EsdmCompletionTest : BasePlatformTestCase() {
 
     /**
      * An unknown apiVersion is not ours to complete, so we defer rather than
-     * guess — and deferring means the platform's undiscriminated union shows up
-     * instead. Asserting that union is how we detect that we really did stand
-     * down: only the platform offers core and extension kinds together.
+     * guess. Asserted as "we did not produce the core kind list", because
+     * whatever the platform then offers is its business and not a contract —
+     * an earlier version of this test pinned the platform's output and broke
+     * when the schema's dispatch shape changed, which is precisely the kind of
+     * coupling worth avoiding.
      */
-    fun testUnknownApiVersionDefersToThePlatform() {
+    fun testUnknownApiVersionIsNotGuessedAt() {
         val offered = complete(
             """
             apiVersion: schema.esdm.io/does-not-exist/v9
             kind: <caret>
             """.trimIndent(),
+        ).toSet()
+
+        val coreKinds = complete(
+            """
+            apiVersion: schema.esdm.io/core/v1
+            kind: <caret>
+            """.trimIndent(),
+        ).toSet()
+
+        assertFalse("an unrecognised apiVersion must not be completed as core", offered == coreKinds)
+    }
+
+    /** The merged schema pins apiVersion to an enum, so a typo in it is an error. */
+    fun testUnknownApiVersionIsReportedByValidation() {
+        myFixture.enableInspections(org.jetbrains.yaml.schema.YamlJsonSchemaHighlightingInspection())
+        myFixture.configureByText(
+            "typo.esdm.yaml",
+            """
+            apiVersion: schema.esdm.io/core/v2
+            kind: domain
+            name: library
+            """.trimIndent(),
         )
 
-        assertContainsElements(offered, "aggregate", "feature", "domain-story")
+        val problems = myFixture.doHighlighting(com.intellij.lang.annotation.HighlightSeverity.WARNING)
+            .mapNotNull { it.description }
+        assertTrue("expected the unknown apiVersion to be flagged, got $problems", problems.isNotEmpty())
     }
 }

@@ -30,15 +30,23 @@ object EsdmSchema {
         stream.use { JsonParser.parseReader(it.reader()).asJsonObject }
     }
 
-    /** `apiVersion` value to the branch describing it. */
+    /**
+     * `apiVersion` value to the branch describing it.
+     *
+     * The merged document dispatches with `allOf` of `if`/`then` on
+     * `apiVersion`; the discriminator lives on the `if`, and the shape on the
+     * matching `then`.
+     */
     private val branches: Map<String, JsonObject> by lazy {
-        root.getAsJsonArray("oneOf").orEmpty()
+        root.getAsJsonArray("allOf").orEmpty()
             .mapNotNull { it.asJsonObjectOrNull() }
-            .mapNotNull { branch ->
-                val version = branch.getAsJsonObject("properties")
+            .mapNotNull { entry ->
+                val version = entry.getAsJsonObject("if")
+                    ?.getAsJsonObject("properties")
                     ?.getAsJsonObject(API_VERSION)
                     ?.get("const")?.asStringOrNull()
-                version?.let { it to branch }
+                val branch = entry.getAsJsonObject("then")
+                if (version != null && branch != null) version to branch else null
             }
             .toMap()
     }
