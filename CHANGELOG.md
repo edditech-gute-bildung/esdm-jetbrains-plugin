@@ -21,3 +21,10 @@ on JetBrains Marketplace, so write it for users, not for contributors.
   property of every kind, and a `context-mapping`'s `type` offers the eight DDD
   mapping patterns. Required fields are listed first. Once a `type` is chosen,
   only that variant's fields are offered.
+- `esdm lint` findings shown inline. The binary is discovered next to the
+  project or on `PATH`, and can be pointed at explicitly under
+  *Settings | Tools | ESDM*, along with the model root. A missing binary is not
+  an error — the plugin simply stays quiet.
+- Rule-scoped suppression: `# esdm-lint-disable <rule-id>` above a line, or
+  `# esdm-lint-disable-file <rule-id>` anywhere in the document, with a quick fix
+  to insert either. Suppressing one rule leaves the others reporting.

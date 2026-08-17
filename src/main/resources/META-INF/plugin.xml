@@ -44,5 +44,17 @@
             language="yaml"
             order="first"
             implementationClass="net.edditech.esdm.completion.EsdmCompletionContributor"/>
+
+        <!-- `esdm lint` resolves the whole model directory, so this runs
+             project-scoped and cached rather than once per file. -->
+        <externalAnnotator
+            language="yaml"
+            implementationClass="net.edditech.esdm.lint.EsdmLintAnnotator"/>
+
+        <projectConfigurable
+            parentId="tools"
+            id="net.edditech.esdm.settings"
+            displayName="ESDM"
+            instance="net.edditech.esdm.settings.EsdmConfigurable"/>
     </extensions>
 </idea-plugin>
