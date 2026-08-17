@@ -6,6 +6,8 @@ import com.intellij.psi.PsiManager
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.indexing.FileBasedIndex
+import net.edditech.esdm.model.EsdmModelRoot
+import org.jetbrains.yaml.psi.YAMLFile
 import org.jetbrains.yaml.psi.YAMLDocument
 import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLMapping
@@ -110,21 +112,78 @@ object EsdmReferences {
      * The `name:` scalar of every document declaring [key]. Normally one; more
      * than one means the model has a duplicate, which the linter reports and
      * this deliberately does not hide.
+     *
+     * @param context any element in the referring file, used to locate the model
+     *   when the index cannot answer.
      */
-    fun resolve(project: Project, key: String): List<YAMLScalar> {
-        val index = FileBasedIndex.getInstance()
-        val scope = GlobalSearchScope.allScope(project)
+    fun resolve(project: Project, key: String, context: PsiElement? = null): List<YAMLScalar> {
+        val fromIndex = fromIndex(project, key)
+        if (fromIndex.isNotEmpty()) return fromIndex
+
+        return context?.let { resolveByScanning(project, key, it) }.orEmpty()
+    }
+
+    private fun fromIndex(project: Project, key: String): List<YAMLScalar> {
         val manager = PsiManager.getInstance(project)
         val results = mutableListOf<YAMLScalar>()
 
-        index.processValues(EsdmDeclarationIndex.KEY, key, null, { file, offset ->
-            val psiFile = manager.findFile(file)
-            val element = psiFile?.findElementAt(offset)
-            PsiTreeUtil.getParentOfType(element, YAMLScalar::class.java)?.let { results += it }
-            true
-        }, scope)
-
+        FileBasedIndex.getInstance().processValues(
+            EsdmDeclarationIndex.KEY,
+            key,
+            null,
+            { file, offset ->
+                val element = manager.findFile(file)?.findElementAt(offset)
+                PsiTreeUtil.getParentOfType(element, YAMLScalar::class.java)?.let { results += it }
+                true
+            },
+            GlobalSearchScope.allScope(project),
+        )
         return results
+    }
+
+    /**
+     * Fallback for models the index never saw.
+     *
+     * A file-based index only covers files in an indexable set — content roots,
+     * libraries and the like. Opening a model directory as a bare folder gives a
+     * project with no module and no content root, and then the index is
+     * permanently empty: every reference reported "Cannot find declaration to go
+     * to" while the tests passed, because a test fixture always has a module.
+     *
+     * Scanning is affordable here in a way it would not be for a general
+     * language: a model is tens of files, and the directory is already known
+     * because the linter runs from it.
+     */
+    @org.jetbrains.annotations.VisibleForTesting
+    fun resolveByScanning(project: Project, key: String, context: PsiElement): List<YAMLScalar> {
+        val origin = context.containingFile?.virtualFile ?: return emptyList()
+        val root = EsdmModelRoot.of(origin) ?: return emptyList()
+        val manager = PsiManager.getInstance(project)
+
+        return EsdmModelRoot.documentsUnder(root).flatMap { file ->
+            val yaml = manager.findFile(file) as? YAMLFile ?: return@flatMap emptyList()
+            yaml.documents.mapNotNull { document -> document.declarationMatching(key) }
+        }
+    }
+
+    /** The document's `name:` scalar, if this document declares [key]. */
+    private fun YAMLDocument.declarationMatching(key: String): YAMLScalar? {
+        val mapping = topLevelValue as? YAMLMapping ?: return null
+        val kind = mapping.text("kind") ?: return null
+        val nameScalar = mapping.getKeyValueByKey("name")?.value as? YAMLScalar ?: return null
+        val name = nameScalar.textValue.takeIf { it.isNotEmpty() } ?: return null
+
+        val scope = mapping.getKeyValueByKey("scope")?.value as? YAMLMapping
+        val declaredIn = EsdmScope(
+            domain = scope?.text("domain"),
+            boundedContext = scope?.text("boundedContext"),
+            aggregate = scope?.text("aggregate"),
+            dynamicConsistencyBoundary = scope?.text("dynamicConsistencyBoundary"),
+        )
+
+        // Deliberately the same key construction the index uses, so the fallback
+        // cannot resolve differently from the fast path.
+        return if (key in EsdmKeys.forDeclaration(kind, name, declaredIn)) nameScalar else null
     }
 
     private fun YAMLMapping.text(key: String): String? =

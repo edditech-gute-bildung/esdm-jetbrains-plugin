@@ -77,7 +77,7 @@ class EsdmDocumentationTargetProvider : com.intellij.platform.backend.documentat
 
         listOfNotNull(scalar, valueOfEnclosingPair).distinct().forEach { candidate ->
             EsdmReferences.keyFor(candidate)?.let { key ->
-                EsdmReferences.resolve(file.project, key).firstOrNull()?.let {
+                EsdmReferences.resolve(file.project, key, candidate).firstOrNull()?.let {
                     return listOf(EsdmDeclarationTarget(it))
                 }
             }

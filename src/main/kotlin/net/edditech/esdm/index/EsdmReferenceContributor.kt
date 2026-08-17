@@ -46,7 +46,7 @@ class EsdmReference(scalar: YAMLScalar) : PsiPolyVariantReferenceBase<YAMLScalar
 
     override fun multiResolve(incompleteCode: Boolean): Array<ResolveResult> {
         val key = EsdmReferences.keyFor(element) ?: return ResolveResult.EMPTY_ARRAY
-        return EsdmReferences.resolve(element.project, key)
+        return EsdmReferences.resolve(element.project, key, element)
             .map { com.intellij.psi.PsiElementResolveResult(it) }
             .toTypedArray()
     }

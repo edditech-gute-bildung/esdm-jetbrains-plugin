@@ -7,6 +7,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
+import net.edditech.esdm.model.EsdmModelRoot
 import net.edditech.esdm.schema.ESDM_FILE_SUFFIX
 import net.edditech.esdm.settings.EsdmSettings
 import java.io.File
@@ -141,23 +142,7 @@ class EsdmLintService(private val project: Project) {
             ?.takeIf { it.isNotBlank() }
             ?.let { return LocalFileSystem.getInstance().findFileByPath(it) }
 
-        var directory: VirtualFile? = file.parent ?: return null
-        var best: VirtualFile? = null
-
-        // Walks up while the folders still hold model documents, and stops at the
-        // first that does not. Anchoring the walk on the project base path
-        // instead looked reasonable and was wrong: content roots need not sit
-        // under it, and the walk then stopped one level too low.
-        var remaining = MAX_WALK_UP
-        while (directory != null && remaining-- > 0) {
-            if (directory.findChild("schemas")?.isDirectory == true) return directory
-            val holdsDocuments = directory.children?.any { it.name.endsWith(ESDM_FILE_SUFFIX) } == true
-            if (!holdsDocuments) break
-
-            best = directory
-            directory = directory.parent
-        }
-        return best ?: file.parent
+        return EsdmModelRoot.of(file)
     }
 
     private fun relativePath(root: VirtualFile, file: VirtualFile): String? =

@@ -52,7 +52,7 @@ class EsdmLegacyDocumentationProvider : AbstractDocumentationProvider() {
 
         return listOfNotNull(scalar, valueOfPair).distinct().firstNotNullOfOrNull { candidate ->
             EsdmReferences.keyFor(candidate)?.let { key ->
-                EsdmReferences.resolve(candidate.project, key).firstOrNull()
+                EsdmReferences.resolve(candidate.project, key, candidate).firstOrNull()
             }
         }
     }
