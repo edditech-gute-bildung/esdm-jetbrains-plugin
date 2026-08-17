@@ -2,6 +2,58 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⏸ Where we left off — 2026-08-17
+
+**`0.1.0` is sitting in the JetBrains Marketplace review queue.** Nothing is blocked on us; the
+next move is theirs. Check whether that is still true before doing anything else:
+
+```sh
+curl -s https://plugins.jetbrains.com/api/plugins/intellij/net.edditech.esdm | grep -o '"approve":[a-z]*'
+```
+
+- `"approve":false` → still pending. Expect 3–4 working days from 2026-08-17; chase
+  marketplace@jetbrains.com past that.
+- `"approve":true` → approved. Do the release below.
+
+Plugin id **33606**, listing at `/plugin/33606-esdm`.
+
+### If it was approved
+
+`main` carries four user-visible features that the uploaded `0.1.0` does **not**: rename, gutter
+icons, Go to Symbol, and the artifact structure view. Ship them:
+
+1. Bump `pluginVersion` to `0.2.0` in `gradle.properties`.
+2. `./gradlew patchChangelog` — closes `[Unreleased]` into a dated `[0.2.0]` section, which
+   becomes the Marketplace "What's new" verbatim. Read it as a user before continuing.
+3. `./gradlew clean check verifyPlugin buildPlugin` — must be green on all 9 IDEs.
+4. Generate a token at <https://plugins.jetbrains.com/author/me/tokens> (shown once), store it as
+   the `PUBLISH_TOKEN` GitHub secret, then a GitHub Release triggers `.github/workflows/release.yml`.
+   Only the *first* upload had to be manual.
+
+### If it was rejected
+
+The mail cites a specific approval-guideline clause. Likely candidates are metadata rather than
+code — icon, description, links, vendor details, trader status — none of which a new binary
+fixes. Fix the cited clause and re-upload.
+
+### Decision already taken: do not upload during review
+
+Asked on 2026-08-17 and deliberately declined. Nothing in `0.1.0` is broken, the additions are
+purely additive, a rejection would most likely be about metadata anyway, and after approval a
+release costs one command instead of a manual form plus a human. Revisit only if a defect in
+`0.1.0` turns up.
+
+### Still open, unrelated to the review
+
+- **Trader verification** must be complete on the vendor profile, or plugins get blocked
+  retroactively. edditech is a trader by the DSA definition — this applies even though the plugin
+  is free. See `/Users/s.boehringer/.claude/plans/ok-how-would-you-woolly-papert.md`.
+- **SchemaStore** has no ESDM entry. Deliberately not submitted; the reasoning and the exact
+  catalogue entry are in `docs/schemastore.md`.
+- Fixture kinds never covered: `process-manager`, `subdomain`, `entity`, `value-object`,
+  `domain-service`, `actor.backedBy`.
+- Two deprecated `ReadAction.compute` calls stay on purpose — documented where they sit.
+
 ## Repository state
 
 A Kotlin IntelliJ Platform plugin built with Gradle 9.7 and the IntelliJ Platform Gradle Plugin 2.x, targeting IntelliJ IDEA Community 2025.2.6.3 (build `252`) on JDK 21. See `README.md` for the build commands and the reasoning behind the target choice.
