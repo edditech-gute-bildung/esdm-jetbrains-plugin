@@ -93,6 +93,11 @@
 
         <!-- Command to the events it publishes, and an event back to whatever
              produces or consumes it. -->
+        <!-- Lists artifacts instead of raw YAML keys. Uses the YAML plugin's own
+             extension point rather than competing for the language-wide one. -->
+        <yaml.customStructureViewFactory
+            implementation="net.edditech.esdm.index.EsdmStructureViewFactory"/>
+
         <gotoSymbolContributor
             implementation="net.edditech.esdm.index.EsdmSymbolContributor"/>
 

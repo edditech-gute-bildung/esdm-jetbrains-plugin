@@ -26,6 +26,8 @@ on JetBrains Marketplace, so write it for users, not for contributors.
   bounded contexts, commands and events. Hovering shows that artifact's own
   details — scope, description, what a command publishes, an aggregate's
   invariants — rather than the schema's description of the field.
+- The structure view lists artifacts — "aggregate copy", "command borrow" —
+  instead of repeating apiVersion/kind/name for every document in the file.
 - Gutter icons linking a command to the events it publishes, and an event back
   to whatever produces or consumes it.
 - Go to Symbol (`Ctrl+Alt+Shift+N`) finds any declaration by name, without
