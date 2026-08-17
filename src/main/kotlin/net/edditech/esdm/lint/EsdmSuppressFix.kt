@@ -1,6 +1,7 @@
 package net.edditech.esdm.lint
 
 import com.intellij.codeInsight.intention.IntentionAction
+import com.intellij.codeInsight.intention.preview.IntentionPreviewInfo
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
@@ -35,7 +36,22 @@ class EsdmSuppressFix(private val finding: EsdmFinding) : IntentionAction {
 
     @Throws(IncorrectOperationException::class)
     override fun invoke(project: Project, editor: Editor?, file: PsiFile?) {
-        val document = editor?.document ?: return
+        insertComment(editor?.document ?: return)
+    }
+
+    /**
+     * Without this the platform falls back to rendering the preview through a
+     * throwaway editor, which showed up in the IDE log as a disposer trace from
+     * `IntentionPreviewPopupUpdateProcessor` simply from opening Alt+Enter.
+     * Editing the preview document directly is both cheaper and what the
+     * fallback was trying to approximate.
+     */
+    override fun generatePreview(project: Project, editor: Editor, file: PsiFile): IntentionPreviewInfo {
+        insertComment(editor.document)
+        return IntentionPreviewInfo.DIFF
+    }
+
+    private fun insertComment(document: Document) {
         val lineIndex = (finding.line - 1).coerceIn(0, (document.lineCount - 1).coerceAtLeast(0))
         val lineStart = document.getLineStartOffset(lineIndex)
         val indent = document.charsSequence
