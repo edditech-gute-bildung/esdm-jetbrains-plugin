@@ -25,6 +25,14 @@ import org.jetbrains.yaml.schema.YamlJsonSchemaHighlightingInspection
  */
 class EsdmSchemaTest : BasePlatformTestCase() {
 
+    override fun setUp() {
+        super.setUp()
+        // These tests are about schema validation alone. Since the lint service
+        // mirrors editor content to disk, its findings now show up in the light
+        // fixture too — correct behaviour, but a different subject.
+        net.edditech.esdm.settings.EsdmSettings.getInstance(project).state.lintEnabled = false
+    }
+
     // ---------------------------------------------------------------- validation
 
     fun testUnknownKindIsReported() {

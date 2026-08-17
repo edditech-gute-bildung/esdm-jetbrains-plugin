@@ -73,14 +73,14 @@ object EsdmCli {
      * It resolves references across every document, so a single file linted in
      * isolation reports `unresolved-reference` for everything outside it.
      */
-    fun lint(executable: File, modelRoot: VirtualFile): Outcome {
+    fun lint(executable: File, modelRoot: File): Outcome {
         val commandLine = GeneralCommandLine(executable.absolutePath, "lint")
             .withParameters("--format", "json", "--color", "never")
             // `location.file` comes back relative to the directory resolved from
             // the process working directory, so both are pinned explicitly
             // rather than inherited.
             .withParameters("--directory", ".")
-            .withWorkDirectory(modelRoot.path)
+            .withWorkDirectory(modelRoot.absolutePath)
             .withCharset(StandardCharsets.UTF_8)
 
         val output = try {
