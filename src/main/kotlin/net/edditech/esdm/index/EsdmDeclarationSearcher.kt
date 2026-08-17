@@ -41,9 +41,28 @@ class EsdmDeclarationSearcher : PomDeclarationSearcher() {
  * Named symbol for a declaration, delegating navigation to the scalar itself so
  * "go to declaration" lands on the name rather than the document.
  */
-class EsdmPomTarget(val scalar: YAMLScalar) : DelegatePsiTarget(scalar), PomNamedTarget {
+class EsdmPomTarget(val scalar: YAMLScalar) :
+    DelegatePsiTarget(scalar),
+    PomNamedTarget,
+    com.intellij.pom.PomRenameableTarget<Any?> {
 
     override fun getName(): String = scalar.textValue
+
+    override fun isWritable(): Boolean = scalar.isValid && scalar.isWritable
+
+    /**
+     * Renames the declaration itself. References are rewritten separately, by
+     * the rename processor — the platform drives both halves.
+     *
+     * Goes through the element manipulator rather than editing text directly:
+     * `YAMLScalarElementManipulator` knows how to replace a scalar's value
+     * whatever its YAML flavour, which a naive text splice would get wrong for
+     * quoted or block scalars.
+     */
+    override fun setName(newName: String): Any? {
+        com.intellij.psi.ElementManipulators.handleContentChange(scalar, newName)
+        return this
+    }
 
     override fun equals(other: Any?): Boolean = other is EsdmPomTarget && other.scalar == scalar
 

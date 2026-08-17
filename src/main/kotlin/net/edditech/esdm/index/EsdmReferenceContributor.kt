@@ -52,11 +52,17 @@ class EsdmReference(scalar: YAMLScalar) : PsiPolyVariantReferenceBase<YAMLScalar
     }
 
     /**
-     * The declaration is a plain YAML scalar, so renaming through this reference
-     * would rewrite the target's text rather than the model's identity. Rename
-     * is a separate piece of work; refusing here keeps it from half-working.
+     * Rewrites this reference to point at the new name.
+     *
+     * Safe only because every occurrence of a name in an ESDM model is itself a
+     * reference we resolve by key, never by text. Renaming an aggregate changes
+     * its events' `scope.aggregate`, which changes those events' own keys — and
+     * the `aggregate:` field inside every event reference is a reference to the
+     * aggregate too, so it is rewritten in the same pass and the model stays
+     * consistent.
      */
-    override fun handleElementRename(newElementName: String): PsiElement = element
+    override fun handleElementRename(newElementName: String): PsiElement =
+        com.intellij.psi.ElementManipulators.handleContentChange(element, newElementName) ?: element
 
     private companion object {
         /**

@@ -91,6 +91,14 @@
         <pom.declarationSearcher
             implementation="net.edditech.esdm.index.EsdmDeclarationSearcher"/>
 
+        <renamePsiElementProcessor
+            implementation="net.edditech.esdm.index.EsdmRenameProcessor"/>
+
+        <!-- Refuses a name the schema forbids before the refactoring spreads it
+             across every referring file. -->
+        <renameInputValidator
+            implementation="net.edditech.esdm.index.EsdmNamesValidator"/>
+
         <findUsagesHandlerFactory
             implementation="net.edditech.esdm.index.EsdmFindUsagesHandlerFactory"/>
 

@@ -26,6 +26,10 @@ on JetBrains Marketplace, so write it for users, not for contributors.
   bounded contexts, commands and events. Hovering shows that artifact's own
   details — scope, description, what a command publishes, an aggregate's
   invariants — rather than the schema's description of the field.
+- Rename a declaration and every reference follows — across files and bounded
+  contexts. Renaming an aggregate also carries its commands' and events' scope
+  and the event references pointing at them. Prose that merely mentions the name
+  is left alone, and a name the schema forbids is refused before anything moves.
 - Find Usages on any declaration: "which policies handle this event?", answered
   from the declaration or from any reference to it.
 - Rule-scoped suppression: `# esdm-lint-disable <rule-id>` above a line, or
