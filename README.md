@@ -11,9 +11,15 @@ text.
 `identifiedBy` and `state`, not every field of every kind. A `context-mapping`'s `type` offers
 the eight DDD mapping patterns, and once one is chosen only that variant's fields remain.
 
+<img src="docs/screenshots/esdm-autocompletion.png" alt="Completion inside a kind: aggregate, offering only that kind's fields" width="720">
+
+<img src="docs/screenshots/esdm-ddd-patterns.png" alt="The eight DDD mapping patterns offered for a context-mapping's type" width="720">
+
 **Validation as you type.** The ESDM schemas are bundled and applied automatically, so the
 per-document `# yaml-language-server: $schema=…` modeline the upstream docs describe is no
 longer needed.
+
+<img src="docs/screenshots/esdm-validation.png" alt="Schema validation reporting an unknown field inline" width="720">
 
 **The linter, inline.** `esdm lint` findings appear in the editor with their rule IDs, plus a
 quick fix inserting `# esdm-lint-disable <rule-id>` where a model legitimately deviates.
@@ -23,9 +29,13 @@ its declaration; hover for that artifact's own details. Find Usages answers "whi
 handle this event?". Gutter icons link a command to the events it publishes and back. Go to
 Symbol finds any declaration by name.
 
+<img src="docs/screenshots/esdm-domain-description.png" alt="Hovering a domain reference shows that domain's own description and where it is declared" width="720">
+
 **Rename.** Renaming a declaration carries every reference with it, across files and bounded
 contexts — including the cascade when an aggregate's name appears in its commands' and events'
 scope. Prose that merely mentions the name is left alone.
+
+<img src="docs/screenshots/esdm-renaming.png" alt="Renaming a declaration, with every reference listed" width="720">
 
 ## The `esdm` binary
 
