@@ -26,6 +26,10 @@ on JetBrains Marketplace, so write it for users, not for contributors.
   bounded contexts, commands and events. Hovering shows that artifact's own
   details — scope, description, what a command publishes, an aggregate's
   invariants — rather than the schema's description of the field.
+- Gutter icons linking a command to the events it publishes, and an event back
+  to whatever produces or consumes it.
+- Go to Symbol (`Ctrl+Alt+Shift+N`) finds any declaration by name, without
+  needing to know which bounded context owns it.
 - Rename a declaration and every reference follows — across files and bounded
   contexts. Renaming an aggregate also carries its commands' and events' scope
   and the event references pointing at them. Prose that merely mentions the name

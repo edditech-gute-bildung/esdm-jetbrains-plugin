@@ -91,6 +91,15 @@
         <pom.declarationSearcher
             implementation="net.edditech.esdm.index.EsdmDeclarationSearcher"/>
 
+        <!-- Command to the events it publishes, and an event back to whatever
+             produces or consumes it. -->
+        <gotoSymbolContributor
+            implementation="net.edditech.esdm.index.EsdmSymbolContributor"/>
+
+        <codeInsight.lineMarkerProvider
+            language="yaml"
+            implementationClass="net.edditech.esdm.index.EsdmLineMarkerProvider"/>
+
         <renamePsiElementProcessor
             implementation="net.edditech.esdm.index.EsdmRenameProcessor"/>
 

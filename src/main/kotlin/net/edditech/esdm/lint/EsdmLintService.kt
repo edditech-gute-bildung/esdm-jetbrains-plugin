@@ -77,6 +77,13 @@ class EsdmLintService(private val project: Project) {
      *
      * Documents are read under a read action because this runs on the
      * annotator's background phase, which holds none.
+     *
+     * Plugin Verifier flags `ReadAction.compute` as deprecated on 262, and this
+     * stays deliberately. Both blocking forms — this and the Kotlin
+     * `runReadAction` — are deprecated in favour of the suspending
+     * `readAction {}`, and the caller is `ExternalAnnotator.doAnnotate`, which is
+     * not a suspend function. Restructuring the annotator around coroutines to
+     * silence a warning would be worse code than the warning.
      */
     private fun collectContent(root: VirtualFile): Map<String, String> =
         ReadAction.compute<Map<String, String>, RuntimeException> {
