@@ -1,5 +1,43 @@
 # esdm-jetbrains-plugin
-A Jetbrains-Suite Plugin for working with ESDM (Event Sourced Domain Modeling) files.
+
+Editor support for [ESDM](https://www.esdm.io/) — Event-Sourced Domain Modeling — in every
+JetBrains IDE. ESDM describes a domain as YAML: bounded contexts, aggregates, commands, events,
+policies and the rules binding them. This plugin makes those files behave like code rather than
+text.
+
+## What it does
+
+**Completion that knows the document.** Inside a `kind: aggregate` you are offered
+`identifiedBy` and `state`, not every field of every kind. A `context-mapping`'s `type` offers
+the eight DDD mapping patterns, and once one is chosen only that variant's fields remain.
+
+**Validation as you type.** The ESDM schemas are bundled and applied automatically, so the
+per-document `# yaml-language-server: $schema=…` modeline the upstream docs describe is no
+longer needed.
+
+**The linter, inline.** `esdm lint` findings appear in the editor with their rule IDs, plus a
+quick fix inserting `# esdm-lint-disable <rule-id>` where a model legitimately deviates.
+
+**Navigation.** Ctrl-click a `domain`, `boundedContext`, `command` or `event` reference to reach
+its declaration; hover for that artifact's own details. Find Usages answers "which policies
+handle this event?". Gutter icons link a command to the events it publishes and back. Go to
+Symbol finds any declaration by name.
+
+**Rename.** Renaming a declaration carries every reference with it, across files and bounded
+contexts — including the cascade when an aggregate's name appears in its commands' and events'
+scope. Prose that merely mentions the name is left alone.
+
+## The `esdm` binary
+
+Optional. Everything except the linter works without it. It is looked for next to the project,
+then on `PATH`, and can be pointed at explicitly under *Settings | Tools | ESDM*, along with the
+model root. It is not bundled: it is platform-specific and pinned per project, since the linter
+rejects local schemas that drift from the revision embedded in the binary.
+
+```sh
+curl -O https://esdm.s3.fr-par.scw.cloud/0.14.0/esdm-darwin-arm64
+mv esdm-darwin-arm64 esdm && xattr -d com.apple.quarantine esdm && chmod a+x esdm
+```
 
 ## Development
 
@@ -16,7 +54,7 @@ newer JDK produces class files no IDE below 2026.2 can load.
 The first run downloads IntelliJ IDEA Community 2025.2.6.3 (~1 GB) into the Gradle cache.
 
 `runIde` is most useful with `src/test/testData/library/` opened as the project — a synthetic
-24-document model that lints cleanly and is also the corpus the tests run against.
+33-document model that lints cleanly and is also the corpus the tests run against.
 
 ### The test model
 
@@ -33,11 +71,14 @@ It must stay lint-clean:
 ./esdm view -d src/test/testData/library
 ```
 
-Not yet covered, and worth adding as focused fixtures when the reference index lands:
-`dynamic-consistency-boundary` and its free-standing (BC-scoped) events, `process-manager`,
-`subdomain`, `entity`, `value-object`, `domain-service`, and `actor.backedBy`. The two
-non-interchangeable `eventReference` variants in particular cannot be tested against this
-fixture alone, since it only contains aggregate-owned events.
+A third context, `reservations/`, exists specifically to carry a
+`dynamic-consistency-boundary` and the free-standing events that come with it. Without those,
+the interesting half of an event reference is untestable: `{boundedContext, event}` and
+`{boundedContext, aggregate, event}` look nearly identical and must never resolve to one
+another.
+
+Still uncovered, and worth adding when something needs them: `process-manager`, `subdomain`,
+`entity`, `value-object`, `domain-service`, and `actor.backedBy`.
 
 ### Why Community as the compile target
 
@@ -47,15 +88,6 @@ break the plugin in GoLand, WebStorm, PyCharm and the rest. IntelliJ IDEA stoppe
 separate `IC` builds with 2025.3, so this guard rail only exists while we target `252`. Once the
 floor moves past it, `verifyPlugin` becomes the only line of defence.
 
-### The `esdm` binary
-
-Not committed — it is platform-specific (~8 MB) and pinned per project. The plugin discovers it
-at `./esdm`, then on `PATH`, with an override in settings. To get one:
-
-```sh
-curl -O https://esdm.s3.fr-par.scw.cloud/0.14.0/esdm-darwin-arm64
-mv esdm-darwin-arm64 esdm && xattr -d com.apple.quarantine esdm && chmod a+x esdm
-```
 
 ## ESDM references
 Main site: [https://esdm.io](https://esdm.io).
