@@ -1,0 +1,12 @@
+apiVersion: schema.esdm.io/core/v1
+kind: external-system
+name: notifications
+description: >-
+  Whatever actually delivers mail to borrowers. Modelled as an external system
+  rather than a bounded context: we name the surface we use, not the service.
+scope:
+  domain: library
+direction: outbound
+category: mail
+capabilities:
+  - Send a borrower the due date for a copy they just took out

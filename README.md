@@ -15,7 +15,29 @@ newer JDK produces class files no IDE below 2026.2 can load.
 
 The first run downloads IntelliJ IDEA Community 2025.2.6.3 (~1 GB) into the Gradle cache.
 
-`runIde` is most useful with the sample model in `example/esdm-modell/` opened as the project.
+`runIde` is most useful with `src/test/testData/library/` opened as the project — a synthetic
+24-document model that lints cleanly and is also the corpus the tests run against.
+
+### The test model
+
+`src/test/testData/library/` is deliberately synthetic; no client model is tracked here. The
+cataloging side is ESDM's own [Your First Model by Hand](https://www.esdm.io/getting-started/your-first-model/)
+example kept faithful to upstream, and the lending side grows it the way upstream's Modeling
+Guide suggests — a second bounded context, a context mapping, a policy, an event handler, an
+external system, and a Given-When-Then feature.
+
+It must stay lint-clean:
+
+```sh
+./esdm lint -d src/test/testData/library    # no output, exit 0
+./esdm view -d src/test/testData/library
+```
+
+Not yet covered, and worth adding as focused fixtures when the reference index lands:
+`dynamic-consistency-boundary` and its free-standing (BC-scoped) events, `process-manager`,
+`subdomain`, `entity`, `value-object`, `domain-service`, and `actor.backedBy`. The two
+non-interchangeable `eventReference` variants in particular cannot be tested against this
+fixture alone, since it only contains aggregate-owned events.
 
 ### Why Community as the compile target
 

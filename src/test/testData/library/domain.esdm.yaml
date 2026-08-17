@@ -1,0 +1,8 @@
+apiVersion: schema.esdm.io/core/v1
+kind: domain
+name: library
+description: >-
+  A city library. Synthetic test fixture for this plugin — the cataloging side
+  is ESDM's own "Your First Model by Hand" example, kept faithful to upstream;
+  the lending side grows it the way upstream's Modeling Guide suggests, so the
+  fixture exercises cross-context references, policies and features.
