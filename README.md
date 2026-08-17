@@ -57,7 +57,7 @@ curl -O https://esdm.s3.fr-par.scw.cloud/0.14.0/esdm-darwin-arm64
 mv esdm-darwin-arm64 esdm && xattr -d com.apple.quarantine esdm && chmod a+x esdm
 ```
 
-# ESM Infos
+## ESDM references
 Main site: [https://esdm.io](https://esdm.io).
 Docs: [https://github.com/thenativeweb/esdm/tree/main/documentation/docs](https://github.com/thenativeweb/esdm/tree/main/documentation/docs)
 Core Schema: [https://github.com/thenativeweb/esdm/blob/main/schema/core/v1.yaml](https://github.com/thenativeweb/esdm/blob/main/schema/core/v1.yaml)

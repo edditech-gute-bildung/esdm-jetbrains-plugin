@@ -1,7 +1,9 @@
-<!-- No <version>, <name>, <idea-version> or <change-notes> here: those are
-     injected at build time by patchPluginXml from gradle.properties and the
-     changelog plugin. Keep <id> stable — it can never be changed after the
-     first Marketplace release. -->
+<!-- No <version>, <idea-version> or <change-notes> here: those are injected at
+     build time by patchPluginXml from gradle.properties and the changelog
+     plugin. <name> and <id> are NOT injected and ship exactly as written below.
+     Keep <id> stable — it can never be changed after the first Marketplace
+     release — and keep <name> under 30 characters and free of the words
+     "Plugin", "IntelliJ" and "JetBrains", which are rejection reasons. -->
 <idea-plugin>
     <id>net.edditech.esdm</id>
     <name>ESDM</name>

@@ -39,9 +39,8 @@ class EsdmSchemaFileProvider : JsonSchemaFileProvider {
      */
     override fun getSchemaVersion(): JsonSchemaVersion = JsonSchemaVersion.SCHEMA_2020_12
 
-    override fun getRemoteSource(): String = "https://schema.esdm.io/core/v1"
-
     private companion object {
+        /** Written by the `mergeEsdmSchemas` Gradle task; keep the two in step. */
         const val SCHEMA_RESOURCE = "/schemas/esdm.schema.json"
     }
 }

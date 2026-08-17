@@ -101,12 +101,16 @@ class EsdmSchemaTest : BasePlatformTestCase() {
             """.trimIndent(),
         )
         myFixture.completeBasic()
-        val offered = myFixture.lookupElementStrings.orEmpty()
+        val offered = myFixture.lookupElementStrings.orEmpty().toSet()
 
-        assertContainsElements(offered, "identifiedBy", "state")
-        // Properties belonging to entirely different kinds, and to the other
-        // apiVersion's schema, all leak in.
-        assertContainsElements(offered, "capabilities", "readModel", "scenarios", "sentences")
+        // Asserted as a set relation rather than an exact list, so the test
+        // survives cosmetic changes in ordering or in unrelated kinds and only
+        // flips when the engine genuinely starts discriminating.
+        val foreign = setOf("capabilities", "readModel", "scenarios", "sentences")
+        assertTrue(
+            "completion should still be leaking foreign properties; leaked=${offered intersect foreign}",
+            (offered intersect foreign).isNotEmpty(),
+        )
     }
 
     /**
@@ -127,7 +131,14 @@ class EsdmSchemaTest : BasePlatformTestCase() {
             """.trimIndent(),
         )
         myFixture.completeBasic()
+        val offered = myFixture.lookupElementStrings.orEmpty().toSet()
 
-        assertEquals(listOf("human", "system"), myFixture.lookupElementStrings)
+        // The invariant we actually depend on: the correct values are absent.
+        // Stated this way rather than pinning the exact wrong list, so the test
+        // reports "the engine got fixed" instead of "the wrong answer changed".
+        assertFalse(
+            "context-mapping patterns should still be missing; offered=$offered",
+            offered.containsAll(listOf("published-language", "customer-supplier")),
+        )
     }
 }

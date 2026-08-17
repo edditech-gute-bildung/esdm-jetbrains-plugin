@@ -27,11 +27,19 @@
 hs_err_pid*
 replay_pid*
 
-# Gradle / IntelliJ Platform build output
-.gradle/
-build/
-.kotlin/
-.intellijPlatform/
+# Gradle / IntelliJ Platform build output.
+#
+# Anchored with a leading slash on purpose. An unanchored `build/` matches a
+# directory named `build` at ANY depth — including the source directory of the
+# `net.edditech.esdm.build` package, which silently excluded the buildSrc task
+# class and broke every fresh clone at configuration time.
+/build/
+/buildSrc/build/
+/.gradle/
+/buildSrc/.gradle/
+/.kotlin/
+/buildSrc/.kotlin/
+/.intellijPlatform/
 
 # IDE
 .idea/

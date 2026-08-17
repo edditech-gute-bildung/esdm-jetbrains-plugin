@@ -4,19 +4,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
-Greenfield. The repo contains no plugin sources and no build system yet — only `README.md`, `LICENSE`, `.gitignore` (tracked), plus two untracked working aids:
+A Kotlin IntelliJ Platform plugin built with Gradle 9.7 and the IntelliJ Platform Gradle Plugin 2.x, targeting IntelliJ IDEA Community 2025.2.6.3 (build `252`) on JDK 21. See `README.md` for the build commands and the reasoning behind the target choice.
 
-- `esdm` — the ESDM CLI binary (macOS arm64, v0.14.0, revision `40462017…`). Not tracked; it is ~8 MB and platform-specific. Download instructions and other platform builds: `example/esdm-modell/README.md`.
-- `example/esdm-modell/` — a complete real-world ESDM model (German domain, "RST") used as reference material. It has its own README describing the model, the tooling, and the visualizer.
+Layout worth knowing:
 
-When scaffolding the plugin (Gradle + IntelliJ Platform Gradle Plugin is the conventional choice): `.gitignore` currently contains a blanket `*.jar`, which would silently exclude `gradle/wrapper/gradle-wrapper.jar`. Add a negation before committing the wrapper.
+- `schemas/` — the three ESDM schemas vendored from `schema.esdm.io` at revision `1.0.0`, in the layout `esdm add-schema` writes. Refresh with that command; do not hand-edit.
+- `buildSrc/` — `MergeEsdmSchemas`, which lifts YAML comments into `description` and merges the three schemas into the single JSON document the plugin bundles. Generated output, never committed.
+- `src/test/testData/library/` — the synthetic test model. Must stay lint-clean.
+- `esdm` — the CLI binary. Untracked (platform-specific, ~8 MB); discovered at `./esdm` then on `PATH`.
+- `example/` — gitignored scratch space for real client models. Nothing here may be committed.
+
+**`.gitignore` gotcha, hit twice already:** patterns must be anchored with a leading slash. An unanchored `build/` silently excluded `buildSrc/src/main/kotlin/net/edditech/esdm/build/`, because the Kotlin package is named `build`. A blanket `*.jar` likewise needs `!gradle/wrapper/gradle-wrapper.jar`. Run `git check-ignore -v <path>` when a file mysteriously fails to commit.
 
 ## The esdm CLI
 
 Run from the model directory, or point at one with `-d`:
 
 ```sh
-./esdm lint -d example/esdm-modell                  # validate a model
+./esdm lint -d src/test/testData/library            # validate a model
 ./esdm lint --format json --color never             # machine-readable findings
 ./esdm lint --warnings-as-errors                    # warnings affect exit code
 ./esdm view --with-details                          # hierarchical text summary
@@ -30,11 +35,11 @@ Run from the model directory, or point at one with `-d`:
 
 Linting resolves references across the **whole model directory**, not per file — a single file linted in isolation reports `unresolved-reference` errors for everything outside it. Schemas are embedded in the binary; a local `schemas/` directory is optional, but if present it must match the binary's embedded revision or the linter rejects it (`esdm update-schema` fixes drift).
 
-Known linter blind spots (documented in `example/esdm-modell/README.md`): `kind: entity` cross-references (`identifiedBy.field` into `schema`) are not checked, and `esdm view` omits entities entirely. Both are candidates for the plugin to cover.
+Known linter blind spots: `kind: entity` cross-references (`identifiedBy.field` into `schema`) are not checked, and `esdm view` omits entities entirely. Both are candidates for the plugin to cover with native inspections.
 
 ## The ESDM file format
 
-Read `example/esdm-modell/schemas/core/v1.yaml` before writing any parsing, indexing, or completion code — its header comments are the authoritative spec and expose conventions mechanically via `x-esdm-*` fields.
+Read `schemas/core/v1.yaml` before writing any parsing, indexing, or completion code — its header comments are the authoritative spec and expose conventions mechanically via `x-esdm-*` fields.
 
 - Files are `*.esdm.yaml` (`x-esdm-file-suffix`); one file may hold multiple documents separated by `---` (`x-esdm-document-separator`).
 - Every document has `apiVersion`, `kind`, `name`; `unevaluatedProperties: false` and `required: [apiVersion, kind, name]` at the top level. Names match `^[a-z][a-z0-9-]*$`.
@@ -63,6 +68,6 @@ From `x-esdm-project-layout` in the core schema (a convention, not linter-enforc
 
 - Docs: https://github.com/thenativeweb/esdm/tree/main/documentation/docs
 - Core schema upstream: https://github.com/thenativeweb/esdm/blob/main/schema/core/v1.yaml
-- ESDM Visualizer (Apache-2.0, event-modeling boards per aggregate): https://github.com/impierce/esdm-visualizer — `docker compose up -d` in `example/esdm-modell/`, then http://localhost:3000. Two known limitations are documented in that directory's README.
+- ESDM Visualizer (Apache-2.0, event-modeling boards per aggregate): https://github.com/impierce/esdm-visualizer — runs as a container over a model directory, then http://localhost:3000. Note it draws boards per consistency unit, so a bounded context without one does not appear at all.
 
 The example model, its README, and its comments are written in German; the schemas and the CLI are English. Match whatever language a file already uses when editing it.

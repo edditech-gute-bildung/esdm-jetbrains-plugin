@@ -41,13 +41,20 @@ dependencies {
 
 // The bundled schema is generated, never hand-edited: refresh the vendored
 // sources with `./esdm add-schema` and rebuild.
+// The resource root is declared, not derived by walking parents off the output
+// path: getting that wrong would relocate the resource silently, and the only
+// symptom would be getResourceFile() returning null at IDE runtime — no schema,
+// no build failure.
+val generatedSchemaRoot = layout.buildDirectory.dir("generated/esdm")
+
 val mergeEsdmSchemas = tasks.register<MergeEsdmSchemas>("mergeEsdmSchemas") {
     schemasDirectory = layout.projectDirectory.dir("schemas")
-    outputFile = layout.buildDirectory.file("generated/esdm/schemas/esdm.schema.json")
+    // Must stay in step with SCHEMA_RESOURCE in EsdmSchemaProviderFactory.
+    outputFile = generatedSchemaRoot.map { it.file("schemas/esdm.schema.json") }
 }
 
 sourceSets.main {
-    resources.srcDir(mergeEsdmSchemas.map { it.outputFile.get().asFile.parentFile.parentFile })
+    resources.srcDir(mergeEsdmSchemas.map { generatedSchemaRoot })
 }
 
 intellijPlatform {
@@ -63,6 +70,11 @@ intellijPlatform {
 
     pluginVerification {
         ides {
+            // `recommended()` already covers the latest release of each major
+            // version in our compatibility range. The cross-IDE `select` below
+            // is bounded on BOTH ends deliberately: left open, it would resolve
+            // every release of four products from 252 to whatever ships next,
+            // so the CI download grew without anyone changing a line of code.
             recommended()
             select {
                 types = listOf(
@@ -73,6 +85,7 @@ intellijPlatform {
                 )
                 channels = listOf(ProductRelease.Channel.RELEASE)
                 sinceBuild = providers.gradleProperty("pluginSinceBuild").get()
+                untilBuild = providers.gradleProperty("pluginVerifyUntilBuild").get()
             }
         }
     }
