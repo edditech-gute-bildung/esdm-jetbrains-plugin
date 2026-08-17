@@ -1,0 +1,53 @@
+# Publishes a release to JetBrains Marketplace.
+#
+# Only for the second version onward — the first upload must be done by hand at
+# https://plugins.jetbrains.com/plugin/add, because Marketplace has to create
+# the listing before an API token can update it.
+#
+# Signing is optional and skipped automatically when the secrets are absent:
+# since IntelliJ Platform Gradle Plugin 2.14.0, signPlugin runs before
+# publishPlugin only when a certificate and key are configured. That is why
+# build.gradle.kts has no signing block — the env var names below are the
+# plugin's own defaults.
+name: Release
+
+on:
+  release:
+    types: [prereleased, released]
+
+jobs:
+  publish:
+    name: Publish to Marketplace
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: zulu
+          # Platform 252 runs on Java 21; see gradle.properties.
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      # Catches a broken descriptor before it reaches a human reviewer, who is
+      # the alternative feedback loop and takes days.
+      - name: Verify the plugin
+        run: ./gradlew verifyPlugin
+
+      - name: Publish
+        env:
+          PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
+          CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          PRIVATE_KEY_PASSWORD: ${{ secrets.PRIVATE_KEY_PASSWORD }}
+        run: ./gradlew publishPlugin
+
+      - name: Attach the distribution to the GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.event.release.tag_name }}" ./build/distributions/*.zip

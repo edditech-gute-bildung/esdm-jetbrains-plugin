@@ -7,13 +7,45 @@
 <idea-plugin>
     <id>net.edditech.esdm</id>
     <name>ESDM</name>
-    <vendor url="https://github.com/edditech-gute-bildung/esdm-jetbrains-plugin">edditech</vendor>
+    <!-- A valid, working vendor email is a Marketplace requirement, not a
+         courtesy: criterion 1.3(a) rejects a listing without one. The url is the
+         vendor's own site; the repository belongs in the admin panel's
+         source-code field instead. -->
+    <vendor url="https://edditech.net" email="entwicklung@edditech.net">edditech</vendor>
 
+    <!-- The first ~40 characters are the Marketplace card preview, so they have
+         to say what this is to someone who has never heard of ESDM. -->
     <description><![CDATA[
-        <p>Editor support for <a href="https://www.esdm.io/">ESDM</a>
-        (Event-Sourced Domain Modeling) <code>*.esdm.yaml</code> files:
-        schema-driven completion and validation, inline <code>esdm lint</code>
-        findings, and navigation across the model.</p>
+        <p>Editor support for <b>ESDM</b> — <a href="https://www.esdm.io/">Event-Sourced
+        Domain Modeling</a> — in every JetBrains IDE.</p>
+
+        <p>ESDM describes a domain as YAML: bounded contexts, aggregates, commands, events,
+        policies and the rules that bind them. This plugin makes those files behave like
+        code rather than text.</p>
+
+        <ul>
+            <li><b>Completion that knows the document.</b> Inside a <code>kind: aggregate</code>
+            you are offered <code>identifiedBy</code> and <code>state</code> — not every field of
+            every kind. A <code>context-mapping</code>'s <code>type</code> offers the eight DDD
+            mapping patterns, and once you choose one, only that variant's fields remain.</li>
+
+            <li><b>Validation as you type.</b> The ESDM schemas are bundled and applied
+            automatically, so the per-document <code>yaml-language-server</code> modeline is no
+            longer needed.</li>
+
+            <li><b>The linter, inline.</b> Findings from <code>esdm lint</code> appear in the
+            editor with their rule IDs, and a quick fix to suppress a single rule where a model
+            legitimately deviates.</li>
+
+            <li><b>Navigation across the model.</b> Ctrl-click a <code>domain</code>,
+            <code>boundedContext</code>, <code>command</code> or <code>event</code> reference to
+            reach its declaration; hover to see that artifact's own details. Find Usages answers
+            "which policies handle this event?".</li>
+        </ul>
+
+        <p>The <code>esdm</code> command-line tool is found next to your project or on
+        <code>PATH</code>, and can be pointed at explicitly under
+        <i>Settings | Tools | ESDM</i>. Without it, everything except the linter still works.</p>
     ]]></description>
 
     <!-- Every plugin declares this; without at least one module dependency the

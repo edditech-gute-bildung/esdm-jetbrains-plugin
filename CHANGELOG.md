@@ -9,10 +9,6 @@ on JetBrains Marketplace, so write it for users, not for contributors.
 
 ### Added
 
-- Project scaffolding: Gradle 9.7.0, IntelliJ Platform Gradle Plugin 2.18.1,
-  targeting IntelliJ IDEA Community 2025.2.6.3 (build `252`) on JDK 21.
-- A synthetic `library` model under `src/test/testData/`, used both as the test
-  corpus and as a sample project to open in the sandbox IDE.
 - Schema validation for `*.esdm.yaml`. The ESDM schemas are bundled and applied
   automatically, so the per-document `# yaml-language-server: $schema=...`
   modeline is no longer needed.
