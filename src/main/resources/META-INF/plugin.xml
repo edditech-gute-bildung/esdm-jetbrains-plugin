@@ -1,0 +1,32 @@
+<!-- No <version>, <name>, <idea-version> or <change-notes> here: those are
+     injected at build time by patchPluginXml from gradle.properties and the
+     changelog plugin. Keep <id> stable — it can never be changed after the
+     first Marketplace release. -->
+<idea-plugin>
+    <id>net.edditech.esdm</id>
+    <name>ESDM</name>
+    <vendor url="https://github.com/edditech-gute-bildung/esdm-jetbrains-plugin">edditech</vendor>
+
+    <description><![CDATA[
+        <p>Editor support for <a href="https://www.esdm.io/">ESDM</a>
+        (Event-Sourced Domain Modeling) <code>*.esdm.yaml</code> files:
+        schema-driven completion and validation, inline <code>esdm lint</code>
+        findings, and navigation across the model.</p>
+    ]]></description>
+
+    <!-- Every plugin declares this; without at least one module dependency the
+         plugin is treated as legacy and loads only in IntelliJ IDEA. -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <!-- The bundled YAML plugin supplies the PSI we build on. Verified against
+         the Marketplace compatible-products API: it ships in every IDE we
+         target, so a hard dependency costs no reach and buys compile safety. -->
+    <depends>org.jetbrains.plugins.yaml</depends>
+
+    <!-- Supplies the JSON Schema engine that drives completion and validation
+         in YAML. Extracted from the platform into its own plugin in 2024.3. -->
+    <depends>com.intellij.modules.json</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+    </extensions>
+</idea-plugin>

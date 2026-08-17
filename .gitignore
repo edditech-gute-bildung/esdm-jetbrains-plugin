@@ -19,6 +19,29 @@
 *.tar.gz
 *.rar
 
+# The Gradle wrapper jar MUST be committed — without it `./gradlew` cannot
+# bootstrap on a fresh clone or in CI. The blanket *.jar above would swallow it.
+!gradle/wrapper/gradle-wrapper.jar
+
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# Gradle / IntelliJ Platform build output
+.gradle/
+build/
+.kotlin/
+.intellijPlatform/
+
+# IDE
+.idea/
+*.iml
+
+# The esdm CLI is platform-specific (~8 MB) and version-pinned per project;
+# it is discovered at runtime, never committed. See README.
+/esdm
+
+# Local scratch space for real client models used while developing. Deliberately
+# untracked — this is an open-source repository. The models the tests and demos
+# run against are synthetic and live in src/test/testData/.
+/example/
