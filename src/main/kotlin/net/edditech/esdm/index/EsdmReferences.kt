@@ -28,6 +28,10 @@ object EsdmReferences {
         val keyValue = scalar.parent as? YAMLKeyValue
             ?: return sequenceItemKey(scalar, value)
 
+        // Both halves of a key-value are children of it, so without this the key
+        // itself would be read as a reference to something named after the key.
+        if (keyValue.value !== scalar) return null
+
         val siblings = keyValue.parent as? YAMLMapping ?: return null
 
         return when (keyValue.keyText) {

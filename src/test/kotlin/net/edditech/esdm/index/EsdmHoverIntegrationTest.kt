@@ -17,13 +17,18 @@ class EsdmHoverIntegrationTest : BasePlatformTestCase() {
 
     override fun getTestDataPath() = "src/test/testData"
 
-    private fun hoverAt(relativePath: String, snippet: String): String {
+    /**
+     * @param caretAtEnd true to sit on the last character of [snippet] — the
+     *   value — and false to sit on its first, which is the key. Both are places
+     *   a mouse lands, and they took different code paths.
+     */
+    private fun hoverAt(relativePath: String, snippet: String, caretAtEnd: Boolean = true): String {
         val root = myFixture.copyDirectoryToProject("library", "library")
         myFixture.openFileInEditor(root.findFileByRelativePath(relativePath)!!)
 
         val offset = myFixture.editor.document.text.indexOf(snippet)
         assertTrue("snippet not found: $snippet", offset >= 0)
-        myFixture.editor.caretModel.moveToOffset(offset + snippet.length - 1)
+        myFixture.editor.caretModel.moveToOffset(if (caretAtEnd) offset + snippet.length - 1 else offset)
 
         val targets = IdeDocumentationTargetProvider.getInstance(project)
             .documentationTargets(myFixture.editor, myFixture.file, myFixture.caretOffset)
@@ -55,6 +60,29 @@ class EsdmHoverIntegrationTest : BasePlatformTestCase() {
      * definition, so they were the other place the schema-maintainer note
      * surfaced.
      */
+    /**
+     * Reported from the sandbox with a screenshot: hovering produced a popup
+     * containing the word "boundedContext" and nothing else — the key's own
+     * name, no value, no description. The mouse was over the key, and only the
+     * value scalar was being treated as a reference.
+     */
+    fun testHoverOnTheKeyOfAReferenceShowsTheTarget() {
+        val html = hoverAt("cataloging/book.esdm.yaml", "boundedContext: cataloging", caretAtEnd = false)
+
+        assertTrue(
+            "hovering the key should describe the bounded context it names: $html",
+            html.contains("cataloging"),
+        )
+        assertTrue("expected the target's scope: $html", html.contains("domain: library"))
+    }
+
+    fun testHoverOnTheKeyOfANonReferenceStillDescribesTheField() {
+        // `kind` is a schema enum, not a reference — the schema's own
+        // documentation is the useful answer and must not be suppressed.
+        val html = hoverAt("cataloging/book.esdm.yaml", "kind: aggregate", caretAtEnd = false)
+        assertTrue("expected some documentation for the field: $html", html.isNotEmpty())
+    }
+
     fun testHoverOnABareNameDoesNotShowSchemaInternals() {
         val html = hoverAt("cataloging/book.esdm.yaml", "- acquired")
 

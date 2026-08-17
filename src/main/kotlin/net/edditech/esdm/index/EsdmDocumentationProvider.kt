@@ -66,14 +66,31 @@ class EsdmDocumentationTargetProvider : com.intellij.platform.backend.documentat
         if (!file.name.endsWith(ESDM_FILE_SUFFIX)) return emptyList()
 
         val element = file.findElementAt(offset) ?: return emptyList()
-        val scalar = PsiTreeUtil.getParentOfType(element, YAMLScalar::class.java, false) ?: return emptyList()
 
-        // A reference is documented by what it points at, so resolve first.
-        EsdmReferences.keyFor(scalar)?.let { key ->
-            EsdmReferences.resolve(file.project, key).firstOrNull()?.let { return listOf(EsdmDeclarationTarget(it)) }
+        // The mouse lands on the key as often as on the value — `boundedContext`
+        // in `boundedContext: cataloging` — and the key on its own has nothing
+        // useful to say. Whichever half is under the cursor, the interesting
+        // answer is what the value points at, so both are tried.
+        val scalar = PsiTreeUtil.getParentOfType(element, YAMLScalar::class.java, false)
+        val valueOfEnclosingPair = PsiTreeUtil.getParentOfType(element, YAMLKeyValue::class.java, false)
+            ?.value as? YAMLScalar
+
+        listOfNotNull(scalar, valueOfEnclosingPair).distinct().forEach { candidate ->
+            EsdmReferences.keyFor(candidate)?.let { key ->
+                EsdmReferences.resolve(file.project, key).firstOrNull()?.let {
+                    return listOf(EsdmDeclarationTarget(it))
+                }
+            }
         }
 
-        return if (isDeclarationName(scalar)) listOf(EsdmDeclarationTarget(scalar)) else emptyList()
+        // Nothing resolved: fall through so the schema's own documentation is
+        // shown. For a field like `kind` or `deliveryGuarantee` that is the
+        // useful answer, and suppressing it would be a loss.
+        return if (scalar != null && isDeclarationName(scalar)) {
+            listOf(EsdmDeclarationTarget(scalar))
+        } else {
+            emptyList()
+        }
     }
 }
 
