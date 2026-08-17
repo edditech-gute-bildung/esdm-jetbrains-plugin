@@ -1,0 +1,74 @@
+apiVersion: schema.esdm.io/core/v1
+kind: bounded-context
+name: cataloging
+description: >-
+  Getting books into the library and keeping them findable. Lending lives
+  elsewhere: different vocabulary, different consistency story.
+scope:
+  domain: library
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: aggregate
+name: book
+description: >-
+  One title in the catalog. Identified by its ISBN rather than a generated key —
+  the ISBN already lives in state and is unique per book.
+scope:
+  domain: library
+  boundedContext: cataloging
+identifiedBy:
+  source: state
+  field: isbn
+state:
+  type: object
+  properties:
+    title: { type: string }
+    author: { type: string }
+    isbn: { type: string }
+  required: [title, author, isbn]
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: acquired
+description: >-
+  Named `acquired`, not `book-acquired`: the scope already conveys the
+  aggregate, and the linter actively discourages the redundant prefix.
+scope:
+  domain: library
+  boundedContext: cataloging
+  aggregate: book
+data:
+  type: object
+  properties:
+    title: { type: string }
+    author: { type: string }
+    isbn: { type: string }
+  required: [title, author, isbn]
+metadata:
+  annotations:
+    cloudevents.type: io.eventsourcingdb.library.book-acquired
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: acquire
+description: >-
+  `data` is required even though it mirrors the event's payload here — ESDM
+  keeps the two schemas separate so they can evolve independently.
+scope:
+  domain: library
+  boundedContext: cataloging
+  aggregate: book
+data:
+  type: object
+  properties:
+    title: { type: string }
+    author: { type: string }
+    isbn: { type: string }
+  required: [title, author, isbn]
+publishes:
+  - acquired
+actors:
+  - librarian

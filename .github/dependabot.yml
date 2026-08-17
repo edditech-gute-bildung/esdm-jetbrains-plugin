@@ -1,0 +1,14 @@
+# Weekly rather than the template's `daily`: this is a small plugin and the
+# IntelliJ Platform / Kotlin versions are coupled to the target IDE branch, so
+# most bumps need a deliberate look rather than an automatic merge.
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

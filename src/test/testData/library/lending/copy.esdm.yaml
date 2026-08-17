@@ -1,0 +1,165 @@
+apiVersion: schema.esdm.io/core/v1
+kind: bounded-context
+name: lending
+description: >-
+  Who has which physical copy, and until when. Cataloging knows titles; lending
+  knows the things on the shelf. Both say "book" and mean different things —
+  which is precisely why they are separate contexts.
+scope:
+  domain: library
+ubiquitousLanguage:
+  - term: Copy
+    definition: >-
+      One physical volume on the shelf. A title with three copies is one book in
+      cataloging and three copies here.
+    avoid:
+      - term: Book
+        reason: >-
+          In cataloging a book is a title. Reusing the word here would blur the
+          exact distinction this context exists to make.
+  - term: Loan
+    definition: The period during which a copy is out with a borrower.
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: aggregate
+name: copy
+description: >-
+  A physical copy and its lending lifecycle. Generated identity rather than the
+  ISBN: several copies share one ISBN, so it cannot identify them.
+scope:
+  domain: library
+  boundedContext: lending
+identifiedBy:
+  source: generated
+  generator: uuid
+state:
+  type: object
+  properties:
+    copy-id: { type: string, format: uuid }
+    isbn: { type: string }
+    status:
+      type: string
+      enum: [available, on-loan]
+    borrower: { type: string }
+    due-on: { type: string, format: date }
+  required: [copy-id, isbn, status]
+invariants:
+  - name: only-available-copies-can-be-borrowed
+    rule: >-
+      A copy whose status is `on-loan` must not be borrowed again. The second
+      request is rejected rather than queued.
+  - name: due-date-set-while-on-loan
+    rule: >-
+      `due-on` and `borrower` are set exactly while `status` is `on-loan`, and
+      cleared when the copy comes back.
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: stock
+description: >-
+  Put a physical copy of a catalogued title on the shelf. Issued by the policy
+  that reacts to an acquisition, not by a person.
+scope:
+  domain: library
+  boundedContext: lending
+  aggregate: copy
+data:
+  type: object
+  properties:
+    isbn: { type: string }
+  required: [isbn]
+publishes:
+  - stocked
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: stocked
+scope:
+  domain: library
+  boundedContext: lending
+  aggregate: copy
+data:
+  type: object
+  properties:
+    copy-id: { type: string, format: uuid }
+    isbn: { type: string }
+  required: [copy-id, isbn]
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: borrow
+scope:
+  domain: library
+  boundedContext: lending
+  aggregate: copy
+data:
+  type: object
+  properties:
+    copy-id: { type: string, format: uuid }
+    borrower: { type: string }
+    due-on: { type: string, format: date }
+  required: [copy-id, borrower, due-on]
+publishes:
+  - borrowed
+actors:
+  - borrower
+constraints:
+  - name: rejected-when-already-on-loan
+    rule: >-
+      Emits nothing and is rejected when the copy is already on loan; see the
+      `only-available-copies-can-be-borrowed` invariant.
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: borrowed
+scope:
+  domain: library
+  boundedContext: lending
+  aggregate: copy
+data:
+  type: object
+  properties:
+    copy-id: { type: string, format: uuid }
+    isbn: { type: string }
+    borrower: { type: string }
+    due-on: { type: string, format: date }
+  required: [copy-id, isbn, borrower, due-on]
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: return
+scope:
+  domain: library
+  boundedContext: lending
+  aggregate: copy
+data:
+  type: object
+  properties:
+    copy-id: { type: string, format: uuid }
+  required: [copy-id]
+publishes:
+  - returned
+actors:
+  - borrower
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: returned
+scope:
+  domain: library
+  boundedContext: lending
+  aggregate: copy
+data:
+  type: object
+  properties:
+    copy-id: { type: string, format: uuid }
+    isbn: { type: string }
+    returned-on: { type: string, format: date }
+  required: [copy-id, isbn, returned-on]

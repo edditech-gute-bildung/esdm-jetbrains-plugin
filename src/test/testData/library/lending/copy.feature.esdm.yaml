@@ -1,0 +1,92 @@
+apiVersion: schema.esdm.io/given-when-then/v1
+kind: feature
+name: borrowing-a-copy
+description: >-
+  Pins down the one rule the lending context exists to protect: a copy that is
+  already out cannot be borrowed again. Note the shape — an aggregate feature
+  names events by bare name, because `scope` already fixes the producer.
+scope:
+  domain: library
+  boundedContext: lending
+  aggregate: copy
+scenarios:
+  - name: available-copy-can-be-borrowed
+    given:
+      - event: stocked
+        data:
+          copy-id: 11111111-1111-1111-1111-111111111111
+          isbn: "978-0201616224"
+    when:
+      command: borrow
+      data:
+        copy-id: 11111111-1111-1111-1111-111111111111
+        borrower: card-4711
+        due-on: "2026-09-14"
+      actor: borrower
+    then:
+      events:
+        - event: borrowed
+          data:
+            copy-id: 11111111-1111-1111-1111-111111111111
+            isbn: "978-0201616224"
+            borrower: card-4711
+            due-on: "2026-09-14"
+
+  - name: copy-already-on-loan-is-refused
+    description: >-
+      The second request is rejected outright rather than queued — a waiting
+      list would be a different decision, and is not modelled.
+    given:
+      - event: stocked
+        data:
+          copy-id: 11111111-1111-1111-1111-111111111111
+          isbn: "978-0201616224"
+      - event: borrowed
+        data:
+          copy-id: 11111111-1111-1111-1111-111111111111
+          isbn: "978-0201616224"
+          borrower: card-4711
+          due-on: "2026-09-14"
+    when:
+      command: borrow
+      data:
+        copy-id: 11111111-1111-1111-1111-111111111111
+        borrower: card-0815
+        due-on: "2026-09-21"
+      actor: borrower
+    then:
+      rejection:
+        invariant: only-available-copies-can-be-borrowed
+
+  - name: returned-copy-becomes-borrowable-again
+    given:
+      - event: stocked
+        data:
+          copy-id: 11111111-1111-1111-1111-111111111111
+          isbn: "978-0201616224"
+      - event: borrowed
+        data:
+          copy-id: 11111111-1111-1111-1111-111111111111
+          isbn: "978-0201616224"
+          borrower: card-4711
+          due-on: "2026-09-14"
+      - event: returned
+        data:
+          copy-id: 11111111-1111-1111-1111-111111111111
+          isbn: "978-0201616224"
+          returned-on: "2026-09-10"
+    when:
+      command: borrow
+      data:
+        copy-id: 11111111-1111-1111-1111-111111111111
+        borrower: card-0815
+        due-on: "2026-09-21"
+      actor: borrower
+    then:
+      events:
+        - event: borrowed
+          data:
+            copy-id: 11111111-1111-1111-1111-111111111111
+            isbn: "978-0201616224"
+            borrower: card-0815
+            due-on: "2026-09-21"

@@ -1,0 +1,64 @@
+apiVersion: schema.esdm.io/core/v1
+kind: context-mapping
+name: cataloging-to-lending
+description: >-
+  Cataloging owns the vocabulary of titles — ISBN, title, author — and lending
+  takes it as published, rather than inventing its own. Backed by a real
+  consumer: the `availability` read model projects `cataloging/book/acquired`.
+type: published-language
+publisher:
+  domain: library
+  boundedContext: cataloging
+consumer:
+  domain: library
+  boundedContext: lending
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: policy
+name: stock-acquired-title
+description: >-
+  A newly catalogued title should become lendable without anyone re-typing it.
+  A policy, not an event handler: it drives a decision back into the domain
+  (`stock`) rather than reporting outward.
+scope:
+  domain: library
+deliveryGuarantee: at-least-once
+idempotency:
+  owner: downstream
+  strategy: >-
+    `stock` is keyed by `isbn` plus the originating event id, so a redelivered
+    `acquired` does not put a second copy on the shelf.
+handles:
+  - boundedContext: cataloging
+    aggregate: book
+    event: acquired
+emits:
+  - boundedContext: lending
+    aggregate: copy
+    command: stock
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event-handler
+name: due-date-notice
+description: >-
+  Tells the borrower when the copy is due. An event handler, not a policy:
+  nothing in the domain is triggered, the news simply leaves the system.
+scope:
+  domain: library
+deliveryGuarantee: at-least-once
+idempotency:
+  owner: downstream
+  strategy: >-
+    The notification service receives an idempotency key built from `copy-id`
+    and `due-on`, so a redelivered `borrowed` sends no second mail.
+handles:
+  - boundedContext: lending
+    aggregate: copy
+    event: borrowed
+sideEffects:
+  - type: external-call
+    externalSystem: notifications
+    rule: >-
+      Mail the borrower the title and the date the copy is due back.

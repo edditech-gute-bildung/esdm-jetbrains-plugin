@@ -1,0 +1,59 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: books
+description: The catalog as a flat list, one row per book.
+scope:
+  domain: library
+  boundedContext: cataloging
+paradigm: tabular
+schema:
+  type: array
+  items:
+    type: object
+    properties:
+      title: { type: string }
+      author: { type: string }
+      isbn: { type: string }
+    required: [title, author, isbn]
+projections:
+  - boundedContext: cataloging
+    aggregate: book
+    event: acquired
+    rule: Append a row with `title`, `author`, and `isbn`.
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: query
+name: list-books
+description: >-
+  `result` mirrors the read model's schema because the whole table is returned,
+  but they stay two separate schemas — a query may filter or shape its result
+  independently.
+scope:
+  domain: library
+  boundedContext: cataloging
+readModel: books
+result:
+  type: array
+  items:
+    type: object
+    properties:
+      title: { type: string }
+      author: { type: string }
+      isbn: { type: string }
+    required: [title, author, isbn]
+actors:
+  - librarian
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: actor
+name: librarian
+description: Staff member who catalogs acquisitions and looks titles up.
+scope:
+  domain: library
+  boundedContext: cataloging
+type: human
+responsibilities:
+  - Record newly acquired books in the catalog
+  - Look up what the library holds

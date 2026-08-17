@@ -19,6 +19,46 @@
 *.tar.gz
 *.rar
 
+# The Gradle wrapper jar MUST be committed — without it `./gradlew` cannot
+# bootstrap on a fresh clone or in CI. The blanket *.jar above would swallow it.
+!gradle/wrapper/gradle-wrapper.jar
+
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# Gradle / IntelliJ Platform build output.
+#
+# Anchored with a leading slash on purpose. An unanchored `build/` matches a
+# directory named `build` at ANY depth — including the source directory of the
+# `net.edditech.esdm.build` package, which silently excluded the buildSrc task
+# class and broke every fresh clone at configuration time.
+/build/
+/buildSrc/build/
+/.gradle/
+/buildSrc/.gradle/
+/.kotlin/
+/buildSrc/.kotlin/
+/.intellijPlatform/
+
+# IDE
+.idea/
+*.iml
+
+# The esdm CLI is platform-specific (~8 MB) and version-pinned per project;
+# it is discovered at runtime, never committed. See README.
+/esdm
+
+# Local scratch space for real client models used while developing. Deliberately
+# untracked — this is an open-source repository. The models the tests and demos
+# run against are synthetic and live in src/test/testData/.
+/example/
+
+# Plugin signing material. These belong in GitHub secrets, never in the
+# repository: the private key is what proves a release came from us, and a
+# public repo makes any leak permanent. Generate them outside the working tree
+# if you can; this is the second line of defence, not the first.
+*.pem
+*.crt
+*.p12
+*.jks

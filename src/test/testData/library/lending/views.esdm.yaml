@@ -1,0 +1,80 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: availability
+description: >-
+  What is on the shelf right now. Deliberately projects an event from another
+  bounded context (`cataloging/book/acquired`) so the title is known here
+  before any copy exists — the reason the context mapping in `integration/`
+  is real rather than decorative.
+scope:
+  domain: library
+  boundedContext: lending
+paradigm: tabular
+schema:
+  type: array
+  items:
+    type: object
+    properties:
+      isbn: { type: string }
+      title: { type: string }
+      copies-total: { type: integer, minimum: 0 }
+      copies-available: { type: integer, minimum: 0 }
+    required: [isbn, title, copies-total, copies-available]
+projections:
+  - boundedContext: cataloging
+    aggregate: book
+    event: acquired
+    rule: Insert a row with `isbn` and `title`, both counts at zero.
+  - boundedContext: lending
+    aggregate: copy
+    event: stocked
+    rule: Increment `copies-total` and `copies-available` for the row with this `isbn`.
+  - boundedContext: lending
+    aggregate: copy
+    event: borrowed
+    rule: Decrement `copies-available` for the row with this `isbn`.
+  - boundedContext: lending
+    aggregate: copy
+    event: returned
+    rule: Increment `copies-available` for the row with this `isbn`.
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: query
+name: check-availability
+scope:
+  domain: library
+  boundedContext: lending
+readModel: availability
+parameters:
+  type: object
+  properties:
+    isbn: { type: string }
+  required: [isbn]
+result:
+  type: object
+  properties:
+    isbn: { type: string }
+    title: { type: string }
+    copies-available: { type: integer, minimum: 0 }
+  required: [isbn, title, copies-available]
+actors:
+  - borrower
+constraints:
+  - name: single-title
+    rule: Filter `availability` to the row whose `isbn` matches the parameter.
+
+---
+apiVersion: schema.esdm.io/core/v1
+kind: actor
+name: borrower
+description: >-
+  Someone with a library card, in the role of taking copies out and bringing
+  them back. Not a stored person record — identity lives outside this model.
+scope:
+  domain: library
+  boundedContext: lending
+type: human
+responsibilities:
+  - Check whether a title is available
+  - Borrow a copy and return it

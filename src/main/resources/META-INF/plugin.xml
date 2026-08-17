@@ -1,0 +1,127 @@
+<!-- No <version>, <idea-version> or <change-notes> here: those are injected at
+     build time by patchPluginXml from gradle.properties and the changelog
+     plugin. <name> and <id> are NOT injected and ship exactly as written below.
+     Keep <id> stable — it can never be changed after the first Marketplace
+     release — and keep <name> under 30 characters and free of the words
+     "Plugin", "IntelliJ" and "JetBrains", which are rejection reasons. -->
+<idea-plugin>
+    <id>net.edditech.esdm</id>
+    <name>ESDM</name>
+    <!-- A valid, working vendor email is a Marketplace requirement, not a
+         courtesy: criterion 1.3(a) rejects a listing without one. The url is the
+         vendor's own site; the repository belongs in the admin panel's
+         source-code field instead. -->
+    <vendor url="https://edditech.net" email="entwicklung@edditech.net">edditech</vendor>
+
+    <!-- The first ~40 characters are the Marketplace card preview, so they have
+         to say what this is to someone who has never heard of ESDM. -->
+    <description><![CDATA[
+        <p>Editor support for <b>ESDM</b> — <a href="https://www.esdm.io/">Event-Sourced
+        Domain Modeling</a> — in every JetBrains IDE.</p>
+
+        <p>ESDM describes a domain as YAML: bounded contexts, aggregates, commands, events,
+        policies and the rules that bind them. This plugin makes those files behave like
+        code rather than text.</p>
+
+        <ul>
+            <li><b>Completion that knows the document.</b> Inside a <code>kind: aggregate</code>
+            you are offered <code>identifiedBy</code> and <code>state</code> — not every field of
+            every kind. A <code>context-mapping</code>'s <code>type</code> offers the eight DDD
+            mapping patterns, and once you choose one, only that variant's fields remain.</li>
+
+            <li><b>Validation as you type.</b> The ESDM schemas are bundled and applied
+            automatically, so the per-document <code>yaml-language-server</code> modeline is no
+            longer needed.</li>
+
+            <li><b>The linter, inline.</b> Findings from <code>esdm lint</code> appear in the
+            editor with their rule IDs, and a quick fix to suppress a single rule where a model
+            legitimately deviates.</li>
+
+            <li><b>Navigation across the model.</b> Ctrl-click a <code>domain</code>,
+            <code>boundedContext</code>, <code>command</code> or <code>event</code> reference to
+            reach its declaration; hover to see that artifact's own details. Find Usages answers
+            "which policies handle this event?".</li>
+        </ul>
+
+        <p>The <code>esdm</code> command-line tool is found next to your project or on
+        <code>PATH</code>, and can be pointed at explicitly under
+        <i>Settings | Tools | ESDM</i>. Without it, everything except the linter still works.</p>
+    ]]></description>
+
+    <!-- Every plugin declares this; without at least one module dependency the
+         plugin is treated as legacy and loads only in IntelliJ IDEA. -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <!-- The bundled YAML plugin supplies the PSI we build on. Verified against
+         the Marketplace compatible-products API: it ships in every IDE we
+         target, so a hard dependency costs no reach and buys compile safety. -->
+    <depends>org.jetbrains.plugins.yaml</depends>
+
+    <!-- Supplies the JSON Schema engine that drives completion and validation
+         in YAML. Extracted from the platform into its own plugin in 2024.3. -->
+    <depends>com.intellij.modules.json</depends>
+
+    <!-- Note the namespace: the JSON Schema extension point is still called
+         "JavaScript.JsonSchema" for historical reasons. The implementation lives
+         in the JSON module and drives YAML just as well. -->
+    <extensions defaultExtensionNs="JavaScript.JsonSchema">
+        <ProviderFactory implementation="net.edditech.esdm.schema.EsdmSchemaProviderFactory"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- order="first" matters: this contributor calls stopHere() to suppress
+             the platform's schema completion, which is wrong rather than merely
+             incomplete inside ESDM documents. -->
+        <completion.contributor
+            language="yaml"
+            order="first"
+            implementationClass="net.edditech.esdm.completion.EsdmCompletionContributor"/>
+
+        <!-- `esdm lint` resolves the whole model directory, so this runs
+             project-scoped and cached rather than once per file. -->
+        <externalAnnotator
+            language="yaml"
+            implementationClass="net.edditech.esdm.lint.EsdmLintAnnotator"/>
+
+        <!-- Resolves a reference to its declaration without reading the model. -->
+        <fileBasedIndex implementation="net.edditech.esdm.index.EsdmDeclarationIndex"/>
+
+        <!-- Makes a declaration a symbol the platform can target; without it
+             the caret on a declaration resolves to nothing. -->
+        <pom.declarationSearcher
+            implementation="net.edditech.esdm.index.EsdmDeclarationSearcher"/>
+
+        <findUsagesHandlerFactory
+            implementation="net.edditech.esdm.index.EsdmFindUsagesHandlerFactory"/>
+
+        <psi.referenceContributor
+            language="yaml"
+            implementation="net.edditech.esdm.index.EsdmReferenceContributor"/>
+
+        <!-- order="first": otherwise the JSON Schema documentation wins and every
+             hover shows the schema's description of the field rather than the
+             artifact the reference points at. -->
+        <platform.backend.documentation.psiTargetProvider
+            order="first"
+            implementation="net.edditech.esdm.index.EsdmDocumentationProvider"/>
+
+        <platform.backend.documentation.targetProvider
+            order="first"
+            implementation="net.edditech.esdm.index.EsdmDocumentationTargetProvider"/>
+
+        <!-- The hover popup goes through the LEGACY chain, where the YAML
+             plugin's YamlJsonSchemaDocumentationProvider lives. A new-style
+             provider cannot outrank it however it is ordered, so ESDM
+             documentation has to join this chain and sit ahead of it. -->
+        <lang.documentationProvider
+            language="yaml"
+            order="first, before YamlJsonSchemaDocumentationProvider"
+            implementationClass="net.edditech.esdm.index.EsdmLegacyDocumentationProvider"/>
+
+        <projectConfigurable
+            parentId="tools"
+            id="net.edditech.esdm.settings"
+            displayName="ESDM"
+            instance="net.edditech.esdm.settings.EsdmConfigurable"/>
+    </extensions>
+</idea-plugin>
