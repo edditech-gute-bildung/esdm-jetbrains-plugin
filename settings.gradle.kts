@@ -6,7 +6,7 @@ pluginManagement {
     plugins {
         // Keep in step with the Kotlin version bundled by the target platform;
         // shipping a newer stdlib than the IDE provides is a classic breakage.
-        id("org.jetbrains.kotlin.jvm") version "2.1.20"
+        id("org.jetbrains.kotlin.jvm") version "2.4.10"
         id("org.jetbrains.changelog") version "2.5.0"
     }
 }
