@@ -58,8 +58,16 @@
             language="yaml"
             implementation="net.edditech.esdm.index.EsdmReferenceContributor"/>
 
+        <!-- order="first": otherwise the JSON Schema documentation wins and every
+             hover shows the schema's description of the field rather than the
+             artifact the reference points at. -->
         <platform.backend.documentation.psiTargetProvider
+            order="first"
             implementation="net.edditech.esdm.index.EsdmDocumentationProvider"/>
+
+        <platform.backend.documentation.targetProvider
+            order="first"
+            implementation="net.edditech.esdm.index.EsdmDocumentationTargetProvider"/>
 
         <projectConfigurable
             parentId="tools"

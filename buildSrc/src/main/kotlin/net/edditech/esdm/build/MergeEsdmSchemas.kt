@@ -35,12 +35,19 @@ import org.yaml.snakeyaml.nodes.Tag
  * exploit mechanically: a comment block sitting as the first thing inside a
  * mapping documents that mapping.
  *
- * **Merge into one `oneOf` on `apiVersion`.** IntelliJ discriminates `oneOf`
- * branches by matching `const`, but does not offer completion for properties
- * introduced under `if`/`then` (IJPL-63615), which is where ESDM puts every
- * kind's shape. A single merged document also sidesteps per-file dispatch:
- * `JsonSchemaFileProvider` matches per file, while ESDM's unit is the document
- * and one file may legitimately mix `apiVersion`s.
+ * Not every comment is documentation, though: a few explain the schema files'
+ * own organisation rather than any modelled concept, and those are dropped
+ * again — see [dropSchemaHousekeeping]. The rule catches the ones written more
+ * than once; a single-instance note still slips through, and one does
+ * (`domain-storytelling/$defs/scopeDomain`). Distinguishing those reliably
+ * means reading intent, so the residue is accepted rather than guessed at.
+ *
+ * **Merge into one document dispatched on `apiVersion`.** A single merged
+ * schema sidesteps per-file dispatch: `JsonSchemaFileProvider` matches per
+ * file, while ESDM's unit is the document and one file may legitimately mix
+ * `apiVersion`s. Dispatch is `allOf` of `if`/`then` rather than `oneOf`,
+ * because `oneOf` made the engine report "Validates to more than one variant"
+ * on every complete context-mapping.
  */
 @CacheableTask
 abstract class MergeEsdmSchemas : DefaultTask() {
@@ -154,6 +161,8 @@ abstract class MergeEsdmSchemas : DefaultTask() {
             add("allOf", dispatch)
         }
 
+        val dropped = dropSchemaHousekeeping(merged)
+
         val broken = brokenRefs(merged)
         check(broken.isEmpty()) { "Merged schema has unresolvable pointers: $broken" }
 
@@ -163,7 +172,8 @@ abstract class MergeEsdmSchemas : DefaultTask() {
 
         logger.lifecycle(
             "Merged ${SOURCES.size} ESDM schemas into ${output.name}: " +
-                "$lifted descriptions lifted from comments, ${output.length() / 1024} KB",
+                "$lifted descriptions lifted from comments, $dropped dropped as schema housekeeping, " +
+                "${output.length() / 1024} KB",
         )
     }
 
@@ -303,6 +313,61 @@ abstract class MergeEsdmSchemas : DefaultTask() {
             else -> element
         }
 
+    /**
+     * Removes lifted descriptions that turn out to be about the schema rather
+     * than the model, and returns how many went.
+     *
+     * Not every comment in the sources documents a concept. Some explain the
+     * files' own organisation — "Inlined rather than `$ref`-ed into the core so
+     * the extension document validates in isolation" sits on three unrelated
+     * definitions — and lifting those puts a note for schema maintainers in
+     * front of someone hovering a field in their model.
+     *
+     * The signal is the repetition. A description of a concept is written once,
+     * for that concept; a note about file layout gets pasted wherever the layout
+     * repeats. So a long description appearing verbatim in more than one place
+     * is housekeeping, and is dropped.
+     */
+    private fun dropSchemaHousekeeping(root: JsonObject): Int {
+        val counts = mutableMapOf<String, Int>()
+        fun count(element: com.google.gson.JsonElement) {
+            when {
+                element.isJsonObject -> element.asJsonObject.entrySet().forEach { (key, value) ->
+                    if (key == "description" && value.isJsonPrimitive) {
+                        counts.merge(value.asString, 1, Int::plus)
+                    } else {
+                        count(value)
+                    }
+                }
+
+                element.isJsonArray -> element.asJsonArray.forEach(::count)
+            }
+        }
+        count(root)
+
+        val housekeeping = counts.filterValues { it > 1 }.keys.filter { it.length >= MIN_UNIQUE_DESCRIPTION }
+        if (housekeeping.isEmpty()) return 0
+
+        var removed = 0
+        fun prune(element: com.google.gson.JsonElement) {
+            when {
+                element.isJsonObject -> {
+                    val obj = element.asJsonObject
+                    val description = obj.get("description")
+                    if (description != null && description.isJsonPrimitive && description.asString in housekeeping) {
+                        obj.remove("description")
+                        removed++
+                    }
+                    obj.entrySet().toList().forEach { (_, value) -> prune(value) }
+                }
+
+                element.isJsonArray -> element.asJsonArray.forEach(::prune)
+            }
+        }
+        prune(root)
+        return removed
+    }
+
     private fun brokenRefs(root: JsonObject): List<String> {
         val refs = mutableSetOf<String>()
         fun collect(element: com.google.gson.JsonElement) {
@@ -361,5 +426,8 @@ abstract class MergeEsdmSchemas : DefaultTask() {
         val YAML_FALSE = setOf("false", "no", "off", "n")
 
         const val LOCAL_DEFS = "#/\$defs/"
+
+        /** Below this length, a repeated description is more likely coincidence than housekeeping. */
+        const val MIN_UNIQUE_DESCRIPTION = 40
     }
 }

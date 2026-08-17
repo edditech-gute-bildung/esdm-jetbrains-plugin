@@ -31,10 +31,49 @@ class EsdmDocumentationProvider : PsiDocumentationTargetProvider {
         // Only the `name:` of a document is a declaration; every other scalar is
         // a field value or a reference, and a reference is documented by
         // whatever it resolves to.
-        val keyValue = scalar.parent as? YAMLKeyValue ?: return null
-        if (keyValue.keyText != "name") return null
+        return if (isDeclarationName(scalar)) EsdmDeclarationTarget(scalar) else null
+    }
+}
 
-        return EsdmDeclarationTarget(scalar)
+/**
+ * True only for the `name:` that names a whole document.
+ *
+ * `name` also appears nested — on invariants, timers and glossary terms — and
+ * treating those as declarations made hovering an invariant describe the
+ * enclosing aggregate instead.
+ */
+internal fun isDeclarationName(scalar: YAMLScalar): Boolean {
+    val keyValue = scalar.parent as? YAMLKeyValue ?: return false
+    if (keyValue.keyText != "name") return false
+
+    val owner = keyValue.parent as? YAMLMapping ?: return false
+    val topLevel = PsiTreeUtil.getParentOfType(scalar, YAMLDocument::class.java)?.topLevelValue
+    return owner === topLevel
+}
+
+/**
+ * Offset-based counterpart to [EsdmDocumentationProvider].
+ *
+ * Registering only the PSI-based provider was not enough: the JSON Schema
+ * documentation contributes at this earlier stage, so it answered first and
+ * every hover showed the schema's description of the field — including, for
+ * anything `$ref`-ing the shared `name` definition, a note the schema authors
+ * wrote to explain their own file layout.
+ */
+class EsdmDocumentationTargetProvider : com.intellij.platform.backend.documentation.DocumentationTargetProvider {
+
+    override fun documentationTargets(file: com.intellij.psi.PsiFile, offset: Int): List<DocumentationTarget> {
+        if (!file.name.endsWith(ESDM_FILE_SUFFIX)) return emptyList()
+
+        val element = file.findElementAt(offset) ?: return emptyList()
+        val scalar = PsiTreeUtil.getParentOfType(element, YAMLScalar::class.java, false) ?: return emptyList()
+
+        // A reference is documented by what it points at, so resolve first.
+        EsdmReferences.keyFor(scalar)?.let { key ->
+            EsdmReferences.resolve(file.project, key).firstOrNull()?.let { return listOf(EsdmDeclarationTarget(it)) }
+        }
+
+        return if (isDeclarationName(scalar)) listOf(EsdmDeclarationTarget(scalar)) else emptyList()
     }
 }
 
