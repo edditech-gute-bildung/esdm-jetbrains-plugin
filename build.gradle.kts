@@ -1,3 +1,4 @@
+import net.edditech.esdm.build.MergeEsdmSchemas
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import org.jetbrains.intellij.platform.gradle.models.ProductRelease
@@ -36,6 +37,17 @@ dependencies {
 
         testFramework(TestFrameworkType.Platform)
     }
+}
+
+// The bundled schema is generated, never hand-edited: refresh the vendored
+// sources with `./esdm add-schema` and rebuild.
+val mergeEsdmSchemas = tasks.register<MergeEsdmSchemas>("mergeEsdmSchemas") {
+    schemasDirectory = layout.projectDirectory.dir("schemas")
+    outputFile = layout.buildDirectory.file("generated/esdm/schemas/esdm.schema.json")
+}
+
+sourceSets.main {
+    resources.srcDir(mergeEsdmSchemas.map { it.outputFile.get().asFile.parentFile.parentFile })
 }
 
 intellijPlatform {

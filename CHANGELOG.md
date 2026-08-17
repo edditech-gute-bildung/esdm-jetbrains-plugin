@@ -13,3 +13,6 @@ on JetBrains Marketplace, so write it for users, not for contributors.
   targeting IntelliJ IDEA Community 2025.2.6.3 (build `252`) on JDK 21.
 - A synthetic `library` model under `src/test/testData/`, used both as the test
   corpus and as a sample project to open in the sandbox IDE.
+- Schema validation for `*.esdm.yaml`. The ESDM schemas are bundled and applied
+  automatically, so the per-document `# yaml-language-server: $schema=...`
+  modeline is no longer needed. Completion is not yet useful — see the README.

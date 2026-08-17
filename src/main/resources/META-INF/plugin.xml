@@ -27,6 +27,10 @@
          in YAML. Extracted from the platform into its own plugin in 2024.3. -->
     <depends>com.intellij.modules.json</depends>
 
-    <extensions defaultExtensionNs="com.intellij">
+    <!-- Note the namespace: the JSON Schema extension point is still called
+         "JavaScript.JsonSchema" for historical reasons. The implementation lives
+         in the JSON module and drives YAML just as well. -->
+    <extensions defaultExtensionNs="JavaScript.JsonSchema">
+        <ProviderFactory implementation="net.edditech.esdm.schema.EsdmSchemaProviderFactory"/>
     </extensions>
 </idea-plugin>
