@@ -30,6 +30,8 @@ on JetBrains Marketplace, so write it for users, not for contributors.
   bounded contexts, commands and events. Hovering shows that artifact's own
   details — scope, description, what a command publishes, an aggregate's
   invariants — rather than the schema's description of the field.
+- Find Usages on any declaration: "which policies handle this event?", answered
+  from the declaration or from any reference to it.
 - Rule-scoped suppression: `# esdm-lint-disable <rule-id>` above a line, or
   `# esdm-lint-disable-file <rule-id>` anywhere in the document, with a quick fix
   to insert either. Suppressing one rule leaves the others reporting.

@@ -157,33 +157,7 @@ object EsdmReferences {
     @org.jetbrains.annotations.VisibleForTesting
     fun resolveByScanning(project: Project, key: String, context: PsiElement): List<YAMLScalar> {
         val origin = context.containingFile?.virtualFile ?: return emptyList()
-        val root = EsdmModelRoot.of(origin) ?: return emptyList()
-        val manager = PsiManager.getInstance(project)
-
-        return EsdmModelRoot.documentsUnder(root).flatMap { file ->
-            val yaml = manager.findFile(file) as? YAMLFile ?: return@flatMap emptyList()
-            yaml.documents.mapNotNull { document -> document.declarationMatching(key) }
-        }
-    }
-
-    /** The document's `name:` scalar, if this document declares [key]. */
-    private fun YAMLDocument.declarationMatching(key: String): YAMLScalar? {
-        val mapping = topLevelValue as? YAMLMapping ?: return null
-        val kind = mapping.text("kind") ?: return null
-        val nameScalar = mapping.getKeyValueByKey("name")?.value as? YAMLScalar ?: return null
-        val name = nameScalar.textValue.takeIf { it.isNotEmpty() } ?: return null
-
-        val scope = mapping.getKeyValueByKey("scope")?.value as? YAMLMapping
-        val declaredIn = EsdmScope(
-            domain = scope?.text("domain"),
-            boundedContext = scope?.text("boundedContext"),
-            aggregate = scope?.text("aggregate"),
-            dynamicConsistencyBoundary = scope?.text("dynamicConsistencyBoundary"),
-        )
-
-        // Deliberately the same key construction the index uses, so the fallback
-        // cannot resolve differently from the fast path.
-        return if (key in EsdmKeys.forDeclaration(kind, name, declaredIn)) nameScalar else null
+        return EsdmModelCache.declarations(project, origin)[key].orEmpty()
     }
 
     private fun YAMLMapping.text(key: String): String? =

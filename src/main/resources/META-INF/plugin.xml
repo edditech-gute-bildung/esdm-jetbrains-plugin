@@ -54,6 +54,14 @@
         <!-- Resolves a reference to its declaration without reading the model. -->
         <fileBasedIndex implementation="net.edditech.esdm.index.EsdmDeclarationIndex"/>
 
+        <!-- Makes a declaration a symbol the platform can target; without it
+             the caret on a declaration resolves to nothing. -->
+        <pom.declarationSearcher
+            implementation="net.edditech.esdm.index.EsdmDeclarationSearcher"/>
+
+        <findUsagesHandlerFactory
+            implementation="net.edditech.esdm.index.EsdmFindUsagesHandlerFactory"/>
+
         <psi.referenceContributor
             language="yaml"
             implementation="net.edditech.esdm.index.EsdmReferenceContributor"/>
