@@ -70,22 +70,39 @@ intellijPlatform {
 
     pluginVerification {
         ides {
-            // `recommended()` already covers the latest release of each major
-            // version in our compatibility range. The cross-IDE `select` below
-            // is bounded on BOTH ends deliberately: left open, it would resolve
-            // every release of four products from 252 to whatever ships next,
-            // so the CI download grew without anyone changing a line of code.
+            // `recommended()` covers IntelliJ IDEA across the supported range.
+            //
+            // For the other products we verify only the ENDS of the range, not
+            // every release in it. A `select` spanning 252 to latest across four
+            // products resolved 17 IDEs — roughly 17 GB of CI downloads, growing
+            // with every JetBrains release. Binary incompatibilities show up at
+            // the boundaries of a compatibility range; the versions in between
+            // almost never add a finding the edges missed.
             recommended()
+
+            val crossIdeProducts = listOf(
+                IntelliJPlatformType.GoLand,
+                IntelliJPlatformType.WebStorm,
+                IntelliJPlatformType.PyCharm,
+                IntelliJPlatformType.PhpStorm,
+            )
+            val oldest = providers.gradleProperty("pluginSinceBuild").get()
+            val newest = providers.gradleProperty("pluginVerifyUntilBuild").get()
+
+            // Oldest supported build...
             select {
-                types = listOf(
-                    IntelliJPlatformType.GoLand,
-                    IntelliJPlatformType.WebStorm,
-                    IntelliJPlatformType.PyCharm,
-                    IntelliJPlatformType.PhpStorm,
-                )
+                types = crossIdeProducts
                 channels = listOf(ProductRelease.Channel.RELEASE)
-                sinceBuild = providers.gradleProperty("pluginSinceBuild").get()
-                untilBuild = providers.gradleProperty("pluginVerifyUntilBuild").get()
+                sinceBuild = oldest
+                untilBuild = "$oldest.*"
+            }
+            // ...and the newest we have verified against. Raise deliberately as
+            // new platform versions land.
+            select {
+                types = crossIdeProducts
+                channels = listOf(ProductRelease.Channel.RELEASE)
+                sinceBuild = newest.substringBefore(".*")
+                untilBuild = newest
             }
         }
     }
