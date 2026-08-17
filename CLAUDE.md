@@ -11,11 +11,18 @@ next move is theirs. Check whether that is still true before doing anything else
 curl -s https://plugins.jetbrains.com/api/plugins/intellij/net.edditech.esdm | grep -o '"approve":[a-z]*'
 ```
 
-- `"approve":false` → still pending. Expect 3–4 working days from 2026-08-17; chase
-  marketplace@jetbrains.com past that.
+- `"approve":false` → still pending. Expect ~2 business days; chase marketplace@jetbrains.com
+  past 3–4.
 - `"approve":true` → approved. Do the release below.
 
 Plugin id **33606**, listing at `/plugin/33606-esdm`.
+
+**If it has been stuck for more than a few days, check `entwicklung@edditech.net` — including
+spam — before doing anything else.** In every multi-week stall found in the JetBrains forums, the
+cause was an unanswered moderator email asking for something (screenshots, a compatibility range,
+a clarification), sent to the address used at upload. The queue is rarely the problem; a missed
+reply usually is. Nothing else about a submitted update can be edited afterwards except its
+compatibility range, so replying is the only lever.
 
 ### If it was approved
 
@@ -38,10 +45,22 @@ fixes. Fix the cited clause and re-upload.
 
 ### Decision already taken: do not upload during review
 
-Asked on 2026-08-17 and deliberately declined. Nothing in `0.1.0` is broken, the additions are
-purely additive, a rejection would most likely be about metadata anyway, and after approval a
-release costs one command instead of a manual form plus a human. Revisit only if a defect in
-`0.1.0` turns up.
+Asked on 2026-08-17 and declined — but on economics, not risk. Uploading mid-review is explicitly
+**allowed and harmless**: versions queue as independent records, nothing is replaced or
+cancelled, and a vendor with three unapproved versions pending had all three approved. No
+documented penalty exists either way.
+
+It simply buys nothing. `0.1.0` stays in the queue regardless, `0.2.0` joins it as a second
+artifact, both get reviewed, and the first review is the one checking description, icon,
+screenshots and vendor details — feedback worth receiving against one artifact rather than three.
+Nothing in `0.1.0` is broken.
+
+Revisit if a real defect in `0.1.0` turns up: then upload `0.2.0` and email the marketplace team
+a line saying it supersedes, so the moderator reviews the right one.
+
+Worth knowing for later: **every update is manually reviewed, forever.** The one fast path is a
+custom release channel (`alpha`/`beta`), which becomes auto-approved once an approved Stable
+update exists that is less than 120 days old — useful for tester builds, not for Stable.
 
 ### Still open, unrelated to the review
 
