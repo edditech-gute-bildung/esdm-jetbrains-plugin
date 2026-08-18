@@ -7,6 +7,24 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # Kotlin is pinned to the stdlib bundled with the OLDEST platform we
+      # support, not the newest available. JetBrains: "If a plugin supports
+      # multiple platform versions, it must target the lowest bundled stdlib
+      # version." Our floor is build 252 (2025.2), which bundles 2.1.20.
+      #
+      # A bump passes everything — tests green, Plugin Verifier Compatible on
+      # all nine IDEs — because today's code happens to touch no stdlib API
+      # newer than 2.1.20. That is exactly why the pin has to be deliberate:
+      # it stops someone later using a 2.2+ API that compiles here and throws
+      # NoSuchMethodError in a 2025.2 IDE, since kotlin.stdlib.default.dependency
+      # is false and we use the IDE's stdlib at runtime.
+      #
+      # Raise this ONLY when `pluginSinceBuild` moves, and then to the stdlib
+      # of the new floor:
+      #   2025.2 -> 2.1.20   2025.3 -> 2.2.20   2026.1 -> 2.3.20   2026.2 -> 2.4.0
+      # https://plugins.jetbrains.com/docs/intellij/using-kotlin.html
+      - dependency-name: "org.jetbrains.kotlin.jvm"
 
   - package-ecosystem: github-actions
     directory: /
