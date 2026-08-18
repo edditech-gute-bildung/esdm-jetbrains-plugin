@@ -88,6 +88,11 @@
 
         <!-- Makes a declaration a symbol the platform can target; without it
              the caret on a declaration resolves to nothing. -->
+        <!-- Without this the rename dialog names the implementation class:
+             "Rename Esdm Pom Target 'book'". -->
+        <elementDescriptionProvider
+            implementation="net.edditech.esdm.index.EsdmElementDescriptionProvider"/>
+
         <pom.declarationSearcher
             implementation="net.edditech.esdm.index.EsdmDeclarationSearcher"/>
 
