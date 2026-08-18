@@ -35,7 +35,7 @@ Symbol finds any declaration by name.
 contexts — including the cascade when an aggregate's name appears in its commands' and events'
 scope. Prose that merely mentions the name is left alone.
 
-<img src="docs/screenshots/esdm-renaming.png" alt="Renaming a declaration, with every reference listed" width="720">
+<img src="docs/screenshots/esdm-renaming.png" alt="The rename dialog, naming the artifact: Rename aggregate 'copy' and its usages to" width="720">
 
 ## The `esdm` binary
 
