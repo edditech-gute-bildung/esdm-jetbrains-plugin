@@ -26,7 +26,7 @@ jobs:
         with:
           ref: ${{ github.event.release.tag_name }}
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: zulu
           # Platform 252 runs on Java 21; see gradle.properties.
