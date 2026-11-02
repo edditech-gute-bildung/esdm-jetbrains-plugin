@@ -10,5 +10,5 @@ dependencies {
     // SnakeYAML is the only YAML parser that exposes comments on the node tree
     // (LoaderOptions.isProcessComments), which the schema transform depends on.
     implementation("org.yaml:snakeyaml:2.6")
-    implementation("com.google.code.gson:gson:2.14.0")
+    implementation("com.google.code.gson:gson:2.15.0")
 }
